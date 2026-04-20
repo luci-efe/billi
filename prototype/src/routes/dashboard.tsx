@@ -1,0 +1,255 @@
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Wallet, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  Filter,
+  CalendarDays
+} from "lucide-react";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from "@/components/ui/card";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell,
+  PieChart,
+  Pie
+} from "recharts";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+const barData = [
+  { name: "Lun", ingresos: 1200, egresos: 800 },
+  { name: "Mar", ingresos: 1500, egresos: 1100 },
+  { name: "Mie", ingresos: 900, egresos: 1200 },
+  { name: "Jue", ingresos: 2000, egresos: 1500 },
+  { name: "Vie", ingresos: 1800, egresos: 900 },
+  { name: "Sab", ingresos: 2500, egresos: 1800 },
+  { name: "Dom", ingresos: 3000, egresos: 2100 },
+];
+
+const pieData = [
+  { name: "Comida", value: 4500, color: "#818cf8" },
+  { name: "Transporte", value: 2100, color: "#6366f1" },
+  { name: "Renta", value: 12000, color: "#4f46e5" },
+  { name: "Entretenimiento", value: 1800, color: "#4338ca" },
+  { name: "Otros", value: 1200, color: "#3730a3" },
+];
+
+const recentTransactions = [
+  { id: 1, title: "Starbucks Reforma", category: "Comida", amount: -125, date: "Hoy, 10:30 AM", type: "egreso" },
+  { id: 2, title: "Nómina Quincena", category: "Salario", amount: 15000, date: "Ayer, 09:00 AM", type: "ingreso" },
+  { id: 3, title: "Uber Casa", category: "Transporte", amount: -85, date: "Ayer, 08:45 PM", type: "egreso" },
+  { id: 4, title: "Netflix Suscripción", category: "Entretenimiento", amount: -199, date: "15 Abr, 2024", type: "egreso" },
+  { id: 5, title: "Transferencia SPEI", category: "Otros", amount: 2500, date: "14 Abr, 2024", type: "ingreso" },
+];
+
+export default function Dashboard() {
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-white">Resumen Financiero</h2>
+          <p className="text-slate-400">Bienvenido de vuelta, aquí está tu estado actual.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select defaultValue="week">
+            <SelectTrigger className="w-[180px] bg-slate-900 border-slate-800 text-slate-300">
+              <CalendarDays className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Periodo" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800 text-slate-300">
+              <SelectItem value="day">Hoy</SelectItem>
+              <SelectItem value="week">Esta Semana</SelectItem>
+              <SelectItem value="month">Este Mes</SelectItem>
+              <SelectItem value="year">Este Año</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon" className="border-slate-800 bg-slate-900 text-slate-400">
+            <Filter className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="bg-slate-900 border-slate-800 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-3 opacity-10">
+            <Wallet className="h-12 w-12 text-indigo-400" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardDescription className="text-slate-400">Saldo Neto</CardDescription>
+            <CardTitle className="text-4xl font-bold text-white">$24,500.00</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center text-emerald-400 text-xs font-medium">
+              <ArrowUpRight className="mr-1 h-3 w-3" />
+              +12% vs mes anterior
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-slate-400">Ingresos Totales</CardDescription>
+            <CardTitle className="text-3xl font-bold text-emerald-400">$35,200.00</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center text-slate-500 text-xs">
+              <TrendingUp className="mr-1 h-3 w-3" />
+              8 transacciones este periodo
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-slate-400">Egresos Totales</CardDescription>
+            <CardTitle className="text-3xl font-bold text-rose-400">$10,700.00</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center text-slate-500 text-xs">
+              <TrendingDown className="mr-1 h-3 w-3" />
+              24 transacciones este periodo
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 bg-slate-900 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-white">Flujo de Efectivo</CardTitle>
+            <CardDescription className="text-slate-400">Ingresos vs Egresos por día</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px] w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }} 
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }} 
+                  tickFormatter={(value) => `$${value}`}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
+                  itemStyle={{ fontSize: '12px' }}
+                />
+                <Bar dataKey="ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="egresos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-3 bg-slate-900 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-white">Distribución por Categoría</CardTitle>
+            <CardDescription className="text-slate-400">Tus mayores gastos este periodo</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px] flex flex-col items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
+                  itemStyle={{ fontSize: '12px' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-4 w-full mt-4 px-4">
+              {pieData.map((item) => (
+                <div key={item.name} className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-[10px] text-slate-400 truncate">{item.name}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Transactions */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-white">Transacciones Recientes</CardTitle>
+            <CardDescription className="text-slate-400">Tus últimos movimientos registrados.</CardDescription>
+          </div>
+          <Button variant="link" className="text-indigo-400 hover:text-indigo-300">
+            Ver todas
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentTransactions.map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-full",
+                    tx.type === "ingreso" ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-400"
+                  )}>
+                    {tx.type === "ingreso" ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">{tx.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-slate-500">{tx.date}</p>
+                      <Badge variant="outline" className="text-[10px] h-4 bg-slate-800 border-slate-700 text-slate-400">
+                        {tx.category}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <p className={cn(
+                  "font-semibold",
+                  tx.type === "ingreso" ? "text-emerald-400" : "text-white"
+                )}>
+                  {tx.type === "ingreso" ? "+" : "-"}${Math.abs(tx.amount).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -60,3 +60,6 @@ drizzle/meta/_journal.json.bak
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+# Generated/recorded demo assets (not source code)
+prototype/demo_videos_prototype_kit/
