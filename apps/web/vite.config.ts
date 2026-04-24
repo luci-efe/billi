@@ -1,4 +1,6 @@
-import { defineConfig } from 'vite'
+// Import defineConfig from vitest/config (not 'vite') so the `test` key below
+// is type-checked. vitest/config extends vite's config surface with Vitest's.
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'

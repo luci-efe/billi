@@ -7,3 +7,8 @@ build/
 .wrangler/
 .vite/
 packages/db/migrations/
+
+# Vendored skill packs (BMad, SpecSafe, etc.) — not our source code. These
+# ship their own helper scripts that get scanned by their upstream maintainers.
+.claude/skills/
+.agents/skills/

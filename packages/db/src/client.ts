@@ -9,10 +9,14 @@ export interface DbConfig {
 
 // Factory for a Drizzle client bound to our schema. The Worker and any local
 // scripts share this factory so the schema import path is canonical.
+//
+// authToken is spread conditionally because @libsql/client's `Config` type
+// under `exactOptionalPropertyTypes: true` refuses `authToken: undefined` —
+// the property must be absent or a string, never explicitly set to undefined.
 export function createDbClient(config: DbConfig) {
   const client: Client = createClient({
     url: config.url,
-    authToken: config.authToken,
+    ...(config.authToken ? { authToken: config.authToken } : {}),
   });
   return drizzle(client, { schema });
 }

@@ -19,5 +19,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // shadcn/ui components re-export their `cva` variant configs from the
+      // same file as the component (idiomatic shadcn pattern). allowConstantExport
+      // lets const exports coexist with component exports under Fast Refresh.
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
   },
 ])
