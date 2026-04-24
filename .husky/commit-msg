@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# commit-msg: enforce Conventional Commits format
+# See: https://www.conventionalcommits.org/en/v1.0.0/
+#
+# Accepted format:
+#   <type>[optional scope][optional !]: <description>
+#
+# Types: feat, fix, chore, docs, style, refactor, perf, test, build, ci, revert
+# Scope: lowercase alphanumeric + hyphens, in parentheses
+# Description: 1–100 characters
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+PATTERN='^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(\([a-z0-9\-]+\))?!?: .{1,100}$'
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "commit-msg: commit message does not follow Conventional Commits."
+  echo ""
+  echo "  Expected format: <type>[optional scope]: <description>"
+  echo "  Example:         feat(api): add /api/me upsert endpoint"
+  echo "  Example:         fix: handle null user in auth middleware"
+  echo ""
+  echo "  Valid types: feat, fix, chore, docs, style, refactor, perf, test, build, ci, revert"
+  echo "  See: https://www.conventionalcommits.org/en/v1.0.0/"
+  echo ""
+  echo "  Your message: $COMMIT_MSG"
+  exit 1
+fi

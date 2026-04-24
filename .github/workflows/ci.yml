@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+
+# Cancel superseded runs for the same PR.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+# Minimal default permissions. Jobs that need more must declare it explicitly.
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-bun
+      - name: Run lint across all workspaces
+        run: bun run lint
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-bun
+      - name: Run typecheck across all workspaces
+        run: bun run typecheck
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-bun
+      - name: Build all workspaces (dry-run)
+        run: bun run build
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-bun
+      - name: Run tests (non-blocking — no suites exist yet)
+        id: run-tests
+        run: bun run test
+        continue-on-error: true
+      - name: Emit warning annotation when tests fail
+        if: steps.run-tests.outcome == 'failure'
+        run: echo "::warning::Test suite failed but is non-blocking per AC-3. Add tests to make this check blocking."
+
+  schema-drift:
+    name: schema-drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-bun
+      - name: Regenerate Drizzle migrations
+        # db:generate is offline (schema diffing only). TURSO_DATABASE_URL has a
+        # file: fallback in drizzle.config.ts so no live DB credentials needed.
+        run: bun run db:generate
+      - name: Fail if uncommitted migration drift exists
+        run: |
+          drift=$(git status --porcelain packages/db/migrations/)
+          if [ -n "$drift" ]; then
+            echo "::error::Schema drift detected. Commit the generated migration before merging."
+            echo "$drift"
+            exit 1
+          fi
+
+  env-shape:
+    name: env-shape
+    runs-on: ubuntu-latest
+    env:
+      # Canonical env key lists per spec §4.1. Update this list in the same commit
+      # that adds or removes a variable from the example files.
+      EXPECTED_API_KEYS: "CLERK_SECRET_KEY TURSO_DATABASE_URL TURSO_AUTH_TOKEN OPENROUTER_API_KEY"
+      EXPECTED_WEB_KEYS: "VITE_API_BASE_URL VITE_CLERK_PUBLISHABLE_KEY"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Assert apps/api/.dev.vars.example keys match canonical list
+        run: |
+          # Extract non-comment, non-blank variable names (strip values after =)
+          actual=$(grep -v '^#' apps/api/.dev.vars.example | grep -v '^[[:space:]]*$' | sed 's/=.*//' | sort)
+          expected=$(echo "$EXPECTED_API_KEYS" | tr ' ' '\n' | sort)
+          diff_out=$(diff <(echo "$expected") <(echo "$actual") || true)
+          if [ -n "$diff_out" ]; then
+            echo "::error::apps/api/.dev.vars.example keys don't match the canonical list in ci.yml env-shape job."
+            echo "Expected keys: $EXPECTED_API_KEYS"
+            echo "Diff (- expected, + actual):"
+            echo "$diff_out"
+            exit 1
+          fi
+          echo "apps/api/.dev.vars.example keys match canonical list."
+
+      - name: Assert apps/web/.env.local.example keys match canonical list
+        run: |
+          # Extract non-comment, non-blank variable names; skip commented-out optional vars
+          actual=$(grep -v '^#' apps/web/.env.local.example | grep -v '^[[:space:]]*$' | sed 's/=.*//' | sort)
+          expected=$(echo "$EXPECTED_WEB_KEYS" | tr ' ' '\n' | sort)
+          diff_out=$(diff <(echo "$expected") <(echo "$actual") || true)
+          if [ -n "$diff_out" ]; then
+            echo "::error::apps/web/.env.local.example keys don't match the canonical list in ci.yml env-shape job."
+            echo "Expected keys: $EXPECTED_WEB_KEYS"
+            echo "Diff (- expected, + actual):"
+            echo "$diff_out"
+            exit 1
+          fi
+          echo "apps/web/.env.local.example keys match canonical list."

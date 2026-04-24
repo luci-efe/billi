@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+# pre-commit: secret scan (gitleaks) only.
+# Run by Husky 9+ (no husky.sh sourcing needed).
+#
+# Linting/formatting is NOT run here because Bun workspaces don't hoist
+# per-workspace binaries (eslint lives in apps/*/node_modules/.bin), so
+# auto-fix via lint-staged at repo root is brittle. Authoritative lint
+# enforcement is the `lint` status check in .github/workflows/ci.yml,
+# which runs `bun run --filter '*' lint` and cd's into each workspace.
+
+gitleaks protect --staged --redact --verbose
+GITLEAKS_EXIT=$?
+if [ $GITLEAKS_EXIT -ne 0 ]; then
+  echo ""
+  echo "pre-commit: gitleaks found potential secrets in staged files."
+  echo "  Remove or redact the secret, then re-stage and commit."
+  exit $GITLEAKS_EXIT
+fi

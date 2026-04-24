@@ -1,0 +1,62 @@
+name: Semgrep
+
+# Security note: semgrep/semgrep-action (returntocorp/semgrep-action) was archived in 2024.
+# Official guidance is to run the semgrep/semgrep Docker image directly with `semgrep ci`.
+#
+# Severity policy (AC-3):
+#   Step 1 — Run with --severity=ERROR --error: fails the job on any ERROR-severity finding.
+#   Step 2 — Run with --sarif (all severities, continue-on-error): upload SARIF so GitHub
+#             annotates WARNING/INFO findings on the PR diff without failing the check.
+# This requires security-events: write for SARIF upload; noted deviation from §8 spec sketch
+# which listed only contents: read + pull-requests: write.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:1.161.0
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Step 1: Block on ERROR-severity findings. Job fails here if any ERROR is found.
+      - name: Semgrep scan — block on ERROR
+        run: |
+          semgrep scan \
+            --config p/ci \
+            --config p/owasp-top-ten \
+            --config p/typescript \
+            --severity ERROR \
+            --error \
+            --no-autofix
+
+      # Step 2: Full scan for SARIF upload (annotations on WARNING/INFO — non-blocking).
+      - name: Semgrep scan — SARIF for annotations
+        if: always()
+        run: |
+          semgrep scan \
+            --config p/ci \
+            --config p/owasp-top-ten \
+            --config p/typescript \
+            --sarif \
+            --output semgrep.sarif \
+            --no-autofix || true
+
+      - name: Upload SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        with:
+          sarif_file: semgrep.sarif

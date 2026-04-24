@@ -20,7 +20,11 @@ build/
 .env
 .env.*
 !.env.example
+!.env.local.example
+!*.env.example
+!*.env.local.example
 .dev.vars
+!.dev.vars.example
 wrangler.toml.local
 *.pem
 *.key
@@ -57,9 +61,25 @@ Thumbs.db
 # Drizzle artifacts that shouldn't ship
 drizzle/meta/_journal.json.bak
 
+# Local SQLite / libSQL files used by drizzle-kit studio and ad-hoc dev
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # Misc
 *.tsbuildinfo
 .eslintcache
 
 # Generated/recorded demo assets (not source code)
-prototype/demo_videos_prototype_kit/
+apps/web/demo_videos_prototype_kit/
+
+# Bun
+bun.lockb
+.bun/
+
+# Playwright MCP scratch
+.playwright-mcp/
+
+# Claude Code scheduler lock
+.claude/scheduled_tasks.lock
