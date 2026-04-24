@@ -1,6 +1,8 @@
-// Import defineConfig from vitest/config (not 'vite') so the `test` key below
-// is type-checked. vitest/config extends vite's config surface with Vitest's.
-import { defineConfig } from 'vitest/config'
+// Vitest's `test` config lives in vitest.config.ts (sibling file) because
+// vitest@2 bundles Vite 5 internally; mixing vitest/config types with our
+// Vite 8 `defineConfig` produces a dual-vite-version type clash. Keeping the
+// two configs separate avoids the conflict entirely.
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
@@ -25,10 +27,5 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-  },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./src/test/setup.ts'],
   },
 })
