@@ -69,30 +69,15 @@ Navigate to: **Settings → Secrets and variables → Actions → New repository
 
 ## 4. Add GitHub Actions variable (after first deploy)
 
-The SPA build needs to know the Worker's staging URL. This URL is only
-discoverable after the first `deploy-api` job runs.
+The SPA build needs to know the Worker's staging URL. Set once per repo:
 
-**Step A — run `deploy-api` first** (via a push to `dev` or `workflow_dispatch`).
+| Variable name          | Value                                                          |
+|------------------------|----------------------------------------------------------------|
+| `STAGING_API_BASE_URL` | `https://billi-api-staging.lfernando-rramos.workers.dev`       |
 
-**Step B — find the URL** in the Wrangler deploy output (something like
-`https://billi-api-staging.<subdomain>.workers.dev`). You can also run:
+Set via: **Settings → Secrets and variables → Actions → Variables → New repository variable** (or `gh variable set STAGING_API_BASE_URL --body='<url>' --repo luci-efe/billi`).
 
-```bash
-wrangler deploy --env staging --dry-run 2>&1 | grep workers.dev
-```
-
-**Step C — set the variable:**
-
-Navigate to: **Settings → Secrets and variables → Actions → Variables → New repository variable**
-
-| Variable name          | Value example                                          |
-|------------------------|--------------------------------------------------------|
-| `STAGING_API_BASE_URL` | `https://billi-api-staging.<subdomain>.workers.dev`    |
-
-Until this variable is set, the SPA builds with an empty `VITE_API_BASE_URL`,
-which is safe for a first-boot smoke test (the proxy falls back to
-`/api` on localhost; on staging it simply won't resolve). Set it before
-inviting any testers.
+The subdomain `lfernando-rramos` is the workers.dev subdomain bound to the personal Cloudflare account `4105...`. It does not change between deployments. Until this variable is set, the SPA builds with an empty `VITE_API_BASE_URL`, which is safe for a first-boot smoke test but means every `/api/*` fetch from the browser 404s.
 
 ---
 
@@ -101,12 +86,28 @@ inviting any testers.
 Run once from a machine authenticated to the Cloudflare account:
 
 ```bash
-wrangler pages project create billi-web-staging --production-branch=main
+wrangler pages project create billi-web-staging --production-branch=dev
 ```
 
-This registers the Pages project under your account. The `deploy-web` job in
-`deploy-staging.yml` uses `--project-name=billi-web-staging`, so this must
-exist before the first deploy.
+This registers the Pages project under your account. `deploy-web` uses
+`--project-name=billi-web-staging`, so this must exist before the first
+deploy.
+
+**Why `--production-branch=dev`, not `main`?** Cloudflare Pages reserves
+the bare project URL (`billi-web-staging.pages.dev`) for the project's
+configured production branch. Since this project is the *staging* project
+and we deploy to `dev`, the production branch of the staging project is
+`dev`. Future production deployments will live in a **separate** Pages
+project (`billi-web-production`) whose own production branch will be
+`main` — same naming convention, different concern.
+
+If a Pages project was already created with `production-branch=main`, flip
+it in the dashboard: **Workers & Pages → billi-web-staging → Settings →
+Builds & deployments → Production branch → `dev` → Save**. Cloudflare
+does not auto-promote existing deployments on branch change, so trigger
+one new push to `dev` (or `workflow_dispatch` the deploy workflow); the
+resulting deployment becomes the new production deployment and the bare
+URL resolves within ~30 seconds.
 
 ---
 
@@ -151,21 +152,18 @@ After the first successful workflow run:
 
 **Worker URL:**
 ```
-https://billi-api-staging.<subdomain>.workers.dev
+https://billi-api-staging.lfernando-rramos.workers.dev
 ```
-The exact `<subdomain>` is your workers.dev subdomain, visible in:
-- The `deploy-api` job output (Wrangler prints the full URL).
-- The Cloudflare Workers dashboard under "Preview URL".
-- `wrangler deploy --env staging` output locally.
+Health check: `/health` returns `{"ok":true,"service":"billi-api"}`.
 
-**SPA (Pages) URL:**
-```
-https://billi-web-staging.pages.dev
-```
-Per-commit preview URLs follow the pattern:
-```
-https://<commit-sha>.billi-web-staging.pages.dev
-```
+**SPA (Pages) URLs:**
+- `https://billi-web-staging.pages.dev` — canonical staging URL (serves
+  whatever is deployed from `dev`, since `dev` is the project's production
+  branch).
+- `https://dev.billi-web-staging.pages.dev` — branch alias (same deployment,
+  explicit branch-scoped URL; useful while Cloudflare propagates the
+  production-pointer with a brief delay after a deploy).
+- `https://<commit-sha>.billi-web-staging.pages.dev` — per-commit preview.
 
 Both URLs appear in the **GitHub Actions job summary** of each deployment run
 (click the run → expand the job summary).
