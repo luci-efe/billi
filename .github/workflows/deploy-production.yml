@@ -1,0 +1,98 @@
+# deploy-production.yml
+# Mirror of deploy-staging.yml for the production environment.
+#
+# STATUS: INERT. Production domain binding is not yet configured.
+# This workflow is guarded at the job level by:
+#   if: github.ref == 'refs/heads/main'
+# AND each job's first step emits a ::notice:: and exits without calling wrangler.
+#
+# To activate:
+#   1. Register the production domain and create the Cloudflare zone.
+#   2. Uncomment [[env.production.routes]] in apps/api/wrangler.toml.
+#   3. Create the billi-web-production Pages project.
+#   4. Set PRODUCTION_DOMAIN_READY = 'true' as a GitHub Actions variable.
+#   5. Update VITE_API_BASE_URL to the production API URL in the build step.
+#   See docs/ops/cloudflare-setup.md for the full activation checklist.
+
+name: Deploy -- Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-api:
+    name: Deploy Worker (production)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Production not yet wired
+        run: |
+          echo "::notice::Production deployment is not yet wired. Add domain binding, flip PRODUCTION_DOMAIN_READY=true, and activate the deploy steps. See docs/ops/cloudflare-setup.md."
+          echo "Production deploy skipped -- domain binding not configured." >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------------------------------------------------------------------
+      # FUTURE: uncomment these steps once production domain binding is in place.
+      # ---------------------------------------------------------------------------
+      # - name: Checkout
+      #   uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      #
+      # - name: Setup Bun
+      #   uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      #   with:
+      #     bun-version: latest
+      #
+      # - name: Install dependencies
+      #   run: bun install --frozen-lockfile
+      #
+      # - name: Build API
+      #   run: bun run --filter @billi/api build
+      #
+      # - name: Deploy Worker to production
+      #   uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+      #   with:
+      #     apiToken: ${{ secrets.CF_API_TOKEN }}
+      #     accountId: ${{ secrets.CF_ACCOUNT_ID }}
+      #     workingDirectory: apps/api
+      #     command: deploy --env production
+
+  deploy-web:
+    name: Deploy SPA (production)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Production not yet wired
+        run: |
+          echo "::notice::Production deployment is not yet wired. Add domain binding, flip PRODUCTION_DOMAIN_READY=true, and activate the deploy steps. See docs/ops/cloudflare-setup.md."
+          echo "Production deploy skipped -- domain binding not configured." >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------------------------------------------------------------------
+      # FUTURE: uncomment these steps once production Pages project and domain exist.
+      # ---------------------------------------------------------------------------
+      # - name: Checkout
+      #   uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      #
+      # - name: Setup Bun
+      #   uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      #   with:
+      #     bun-version: latest
+      #
+      # - name: Install dependencies
+      #   run: bun install --frozen-lockfile
+      #
+      # - name: Build SPA
+      #   env:
+      #     VITE_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL }}
+      #   run: bun run --filter @billi/web build
+      #
+      # - name: Deploy SPA to Cloudflare Pages (production)
+      #   uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+      #   with:
+      #     apiToken: ${{ secrets.CF_API_TOKEN }}
+      #     accountId: ${{ secrets.CF_ACCOUNT_ID }}
+      #     command: pages deploy apps/web/dist --project-name=billi-web-production --branch=main

@@ -22,3 +22,27 @@ compatibility_flags = ["nodejs_compat"]
 
 [observability]
 enabled = true
+
+# ---------------------------------------------------------------------------
+# Per-environment overrides
+# ---------------------------------------------------------------------------
+
+[env.staging]
+name = "billi-api-staging"
+workers_dev = true            # reach via https://billi-api-staging.<subdomain>.workers.dev
+# Route stanza intentionally omitted; *.workers.dev URL is enough for staging.
+# Secrets are set once per env:
+#   wrangler secret put CLERK_SECRET_KEY     --env staging
+#   wrangler secret put TURSO_DATABASE_URL   --env staging
+#   wrangler secret put TURSO_AUTH_TOKEN     --env staging
+#   wrangler secret put OPENROUTER_API_KEY   --env staging
+
+[env.production]
+name = "billi-api-production"
+workers_dev = false
+# Production route is commented until the domain exists.
+# Uncomment once billi.agenticengineering.agency (or final domain) is registered
+# and the Cloudflare zone is configured (tracked in docs/ops/cloudflare-setup.md).
+# [[env.production.routes]]
+# pattern = "billi.example.com/api/*"
+# zone_name = "billi.example.com"

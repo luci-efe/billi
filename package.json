@@ -18,10 +18,18 @@
     "test": "bun run --filter '*' test",
     "db:generate": "bun run --filter @billi/db generate",
     "db:migrate": "bun run --filter @billi/db migrate",
-    "db:studio": "bun run --filter @billi/db studio"
+    "db:studio": "bun run --filter @billi/db studio",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx,js,jsx}": ["eslint --fix"],
+    "apps/api/**/*.ts": ["eslint --fix"],
+    "packages/db/**/*.ts": ["eslint --fix"]
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "typescript": "~6.0.2"
   },
-  "packageManager": "bun@1.1.0"
+  "packageManager": "bun@1.3.6"
 }

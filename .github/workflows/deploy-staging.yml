@@ -1,0 +1,97 @@
+# deploy-staging.yml
+# Deploys the Billi API (Cloudflare Worker) and SPA (Cloudflare Pages) to
+# staging on every push to the `dev` branch, and on manual dispatch.
+#
+# Prerequisites — set these once per repo before triggering this workflow:
+#   Secrets (Settings -> Secrets and variables -> Actions -> New repository secret):
+#     CF_API_TOKEN   -- Cloudflare API token (scopes: Workers Scripts Edit,
+#                       Cloudflare Pages Edit, Account Settings Read)
+#     CF_ACCOUNT_ID  -- 4105f6b01897184bf93014d65f1a60f7
+#
+#   Variables (Settings -> Secrets and variables -> Actions -> Variables):
+#     STAGING_API_BASE_URL -- set AFTER the first `deploy-api` run, once you
+#                             know the workers.dev subdomain.
+#                             e.g. https://billi-api-staging.<subdomain>.workers.dev
+#                             Until this variable is set, the SPA build will use
+#                             an empty VITE_API_BASE_URL (safe for first-boot).
+#
+# See docs/ops/cloudflare-setup.md for the full operator runbook.
+
+name: Deploy -- Staging
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-api:
+    name: Deploy Worker (staging)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build API
+        run: bun run --filter @billi/api build
+
+      - name: Deploy Worker to staging
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: apps/api
+          command: deploy --env staging
+
+      - name: Post Worker URL to summary
+        run: |
+          echo "## Deployed to" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **API (Worker):** https://billi-api-staging.\<subdomain\>.workers.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> Exact workers.dev subdomain is visible in the Wrangler deploy output above." >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-web:
+    name: Deploy SPA (staging)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build SPA
+        env:
+          VITE_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+        run: bun run --filter @billi/web build
+
+      - name: Deploy SPA to Cloudflare Pages (staging)
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: pages deploy apps/web/dist --project-name=billi-web-staging --branch=dev
+
+      - name: Post Pages URL to summary
+        run: |
+          echo "## Deployed to" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Web (Pages):** https://billi-web-staging.pages.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> Per-commit preview URL also visible in the Wrangler deploy output above." >> "$GITHUB_STEP_SUMMARY"

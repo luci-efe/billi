@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# pre-commit: secret scan + lint-staged
+# Run by Husky 9+ (no husky.sh sourcing needed)
+
+# 1. Scan staged files for secrets (gitleaks must be installed locally)
+#    Install: https://github.com/gitleaks/gitleaks#installing
+gitleaks protect --staged --redact --verbose
+GITLEAKS_EXIT=$?
+if [ $GITLEAKS_EXIT -ne 0 ]; then
+  echo ""
+  echo "pre-commit: gitleaks found potential secrets in staged files."
+  echo "  Remove or redact the secret, then re-stage and commit."
+  exit $GITLEAKS_EXIT
+fi
+
+# 2. Run lint-staged (eslint --fix on staged TS/JS files)
+bunx lint-staged

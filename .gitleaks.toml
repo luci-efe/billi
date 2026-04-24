@@ -1,0 +1,40 @@
+# .gitleaks.toml — Billi project gitleaks configuration
+# Extends the default gitleaks ruleset with Billi-specific patterns.
+# Stock gitleaks does NOT cover Clerk tokens or Turso auth tokens — custom rules below.
+
+title = "Billi gitleaks config"
+
+# ──────────────────────────────────────────────────────────
+# Custom rules
+# ──────────────────────────────────────────────────────────
+
+[[rules]]
+id = "clerk-secret-key"
+description = "Clerk secret key (sk_live_ or sk_test_)"
+regex = '''sk_(live|test)_[A-Za-z0-9_\-]{20,}'''
+tags = ["clerk", "auth", "secret"]
+
+[[rules]]
+id = "clerk-publishable-key"
+description = "Clerk publishable key (pk_live_ or pk_test_)"
+regex = '''pk_(live|test)_[A-Za-z0-9_\-]{20,}'''
+tags = ["clerk", "auth"]
+
+[[rules]]
+id = "turso-auth-token"
+description = "Turso/libSQL auth token (JWT format starting with eyJ)"
+regex = '''eyJ[A-Za-z0-9_\-]{20,}\.eyJ[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}'''
+keywords = ["TURSO_AUTH_TOKEN", "LIBSQL_AUTH_TOKEN", "turso", "libsql"]
+tags = ["turso", "database", "jwt"]
+
+# ──────────────────────────────────────────────────────────
+# Allowlist — scoped to example/template files only.
+# Must NOT blanket-ignore directories or source files.
+# ──────────────────────────────────────────────────────────
+
+[allowlist]
+description = "Allow placeholder values in example/template files"
+paths = [
+  '''.*\.example$''',
+  '''.*\.example\..*$''',
+]

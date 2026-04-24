@@ -1,0 +1,9 @@
+# .semgrepignore — paths excluded from Semgrep scans
+# Only excludes generated/vendor paths; no source code is excluded.
+
+node_modules/
+dist/
+build/
+.wrangler/
+.vite/
+packages/db/migrations/

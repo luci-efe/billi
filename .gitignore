@@ -61,6 +61,12 @@ Thumbs.db
 # Drizzle artifacts that shouldn't ship
 drizzle/meta/_journal.json.bak
 
+# Local SQLite / libSQL files used by drizzle-kit studio and ad-hoc dev
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # Misc
 *.tsbuildinfo
 .eslintcache
