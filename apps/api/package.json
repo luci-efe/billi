@@ -1,0 +1,31 @@
+{
+  "name": "@billi/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "echo 'lint: TODO'",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@billi/db": "workspace:*",
+    "@clerk/backend": "^1.18.0",
+    "@hono/clerk-auth": "^2.0.0",
+    "@hono/zod-validator": "^0.4.0",
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.38.0",
+    "hono": "^4.6.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.0",
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "typescript": "~6.0.2",
+    "vitest": "^2.1.8",
+    "wrangler": "^3.95.0"
+  }
+}

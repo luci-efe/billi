@@ -1,0 +1,24 @@
+# Billi API Worker — Hono app behind Clerk.
+#
+# Deployment model: standalone Worker. In production we bind it to
+# <domain>/api/* via a Cloudflare zone route so the frontend and API share
+# the same origin (no CORS). Locally we hit it via the Vite proxy.
+
+name = "billi-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Secrets (set with `wrangler secret put <NAME>` in prod; `.dev.vars` in dev):
+#   CLERK_SECRET_KEY
+#   TURSO_DATABASE_URL
+#   TURSO_AUTH_TOKEN
+#   OPENROUTER_API_KEY
+
+# [[routes]]
+# pattern = "billi.example.com/api/*"
+# zone_name = "billi.example.com"
+# Uncomment and edit once the production domain exists.
+
+[observability]
+enabled = true

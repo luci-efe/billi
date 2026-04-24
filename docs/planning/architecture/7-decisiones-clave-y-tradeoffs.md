@@ -10,6 +10,8 @@ El dashboard y listados usarán refetch/polling o actualización manual controla
 
 ## AD-03. Better Auth sobre Drizzle
 
+> **Superseded by [ADR-003](./adr/ADR-003-auth-clerk.md) (2026-04-24).** El MVP adopta Clerk como proveedor de identidad. Turso conserva una tabla `users` espejo (PK = `user_id` de Clerk) para FKs de dominio. Motivo: recortar alcance de Ciclo 1 y evitar mantener el stack de auth a mano. Consultar ADR-003 para el impacto LFPDPPP Art. 36 (transferencia de PII a EE.UU.).
+
 La persistencia de auth se integra con la misma base relacional, simplificando ownership y joins del dominio. Requiere esquema y migraciones explícitas.
 
 ## AD-04. RAG sobre Turso

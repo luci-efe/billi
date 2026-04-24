@@ -54,7 +54,7 @@ Per global working preferences: **always orchestrate, always verify**.
 | Hosting     | Cloudflare Pages                                                |
 | API/BFF     | Cloudflare Workers / Pages Functions · Hono (recommended)       |
 | Database    | Turso (libSQL) · Drizzle ORM · `@libsql/client`                 |
-| Auth        | Better Auth with Drizzle adapter                                |
+| Auth        | Clerk (identity authority) · Turso `users` mirror for FKs — see [ADR-003](docs/planning/architecture/adr/ADR-003-auth-clerk.md) |
 | Storage     | Cloudflare R2                                                   |
 | Billing     | Dodo Payments                                                   |
 | AI          | Mastra orchestration · OpenRouter as provider gateway           |

@@ -1,0 +1,27 @@
+{
+  "name": "billi",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Billi — financial clarity assistant for Mexican professionals (academic MVP).",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:web": "bun run --filter @billi/web dev",
+    "dev:api": "bun run --filter @billi/api dev",
+    "build": "bun run --filter '*' build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter '*' lint",
+    "test": "bun run --filter '*' test",
+    "db:generate": "bun run --filter @billi/db generate",
+    "db:migrate": "bun run --filter @billi/db migrate",
+    "db:studio": "bun run --filter @billi/db studio"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  },
+  "packageManager": "bun@1.1.0"
+}
