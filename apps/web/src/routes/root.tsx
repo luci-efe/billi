@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import { 
   LayoutDashboard, 
   Receipt, 
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useMe } from "@/hooks/use-me";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -22,9 +24,12 @@ const navItems = [
 
 export default function RootLayout() {
   const location = useLocation();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const { data: me } = useMe();
 
   return (
-    <div className="flex min-h-screen w-full bg-slate-950 text-slate-50 antialiased">
+    <div data-testid="root-layout" className="flex min-h-screen w-full bg-slate-950 text-slate-50 antialiased">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl lg:flex">
         <div className="flex h-16 items-center px-6">
@@ -58,13 +63,22 @@ export default function RootLayout() {
         <div className="mt-auto border-t border-slate-800 p-4">
           <div className="flex items-center gap-3 px-2 py-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400">
-              <User className="h-4 w-4" />
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} className="h-full w-full rounded-full" alt={user.fullName || "User"} />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="truncate text-xs font-medium">Demo User</p>
-              <p className="truncate text-[10px] text-slate-500">Free Plan</p>
+              <p className="truncate text-xs font-medium">{user?.fullName || user?.primaryEmailAddress?.emailAddress || "Usuario"}</p>
+              <p className="truncate text-[10px] text-slate-500">{me?.consentAccepted ? "Plan Beta" : "Pendiente Consentimiento"}</p>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-50">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-slate-400 hover:text-slate-50"
+              onClick={() => signOut()}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
