@@ -32,16 +32,31 @@ app.use('/api/*', async (c, next) => {
     if (!c.env.TURSO_DATABASE_URL || c.env.TURSO_DATABASE_URL.includes('replace_me')) {
       // Create a minimal mock DB that satisfies the interface for basic tests
       const mockDb = {
-        run: async () => ({}),
-        select: () => ({ from: () => ({ where: () => ({ get: async () => null, all: async () => [], limit: () => ({}) }) }) }),
-        insert: () => ({ values: () => ({ onConflictDoUpdate: () => ({}) }) }),
-        update: () => ({ set: () => ({ where: () => ({}) }) }),
-        delete: () => ({ where: () => ({ returning: () => ([]) }) }),
+        run: async () => ({ success: true }),
+        select: () => ({ 
+          from: () => ({ 
+            where: () => ({ 
+              get: async () => null, 
+              all: async () => [], 
+              limit: () => ({ 
+                get: async () => null, 
+                all: async () => [] 
+              }) 
+            }) 
+          }) 
+        }),
+        insert: () => ({ values: () => ({ onConflictDoUpdate: async () => ({}) }) }),
+        update: () => ({ set: () => ({ where: async () => ({}) }) }),
+        delete: () => ({ where: () => ({ returning: async () => ([]) }) }),
+        query: {
+          users: { findFirst: async () => null },
+          transactions: { findMany: async () => [] },
+        },
       };
       // @ts-expect-error - Mock DB for tests
       c.set('db', mockDb);
-      // @ts-expect-error - Mock user repo
-      c.set('userRepo', new UserRepository(mockDb));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      c.set('userRepo', new UserRepository(mockDb as any));
     } else {
       c.set('db', db);
       c.set('userRepo', new UserRepository(db));

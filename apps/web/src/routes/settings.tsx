@@ -42,9 +42,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (me) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRfc(me.rfc || "");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrency(me.defaultCurrency || "MXN");
     }
   }, [me]);

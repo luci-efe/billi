@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { apiClient } from '../lib/api-client';
