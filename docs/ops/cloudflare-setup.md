@@ -64,6 +64,7 @@ Navigate to: **Settings → Secrets and variables → Actions → New repository
 |----------------|------------------------------------------|----------------------------------------|
 | `CF_API_TOKEN` | (the token you just created)             | Treat as a password; never log it.     |
 | `CF_ACCOUNT_ID`| `4105f6b01897184bf93014d65f1a60f7`       | Not sensitive, stored here for symmetry.|
+| `STAGING_CLERK_PUBLISHABLE_KEY` | `pk_test_...`           | Required for staging SPA build.        |
 
 ---
 
@@ -71,9 +72,9 @@ Navigate to: **Settings → Secrets and variables → Actions → New repository
 
 The SPA build needs to know the Worker's staging URL. Set once per repo:
 
-| Variable name          | Value                                                          |
-|------------------------|----------------------------------------------------------------|
-| `STAGING_API_BASE_URL` | `https://billi-api-staging.lfernando-rramos.workers.dev`       |
+| Variable name                  | Value                                                          |
+|--------------------------------|----------------------------------------------------------------|
+| `STAGING_API_BASE_URL`         | `https://billi-api-staging.lfernando-rramos.workers.dev`       |
 
 Set via: **Settings → Secrets and variables → Actions → Variables → New repository variable** (or `gh variable set STAGING_API_BASE_URL --body='<url>' --repo luci-efe/billi`).
 
