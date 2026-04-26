@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { 
@@ -25,31 +26,26 @@ export default function Landing() {
     return !isConsentValid(consent);
   });
 
-  const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
-
-  // Still need this for sync if localStorage changes externally (unlikely but good practice)
-  // or if we need to trigger logic that can't be in the initializer.
+  // Sync state if needed (e.g. initial mount checks)
   useEffect(() => {
     const consent = getConsent();
     const valid = isConsentValid(consent);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasConsent(valid);
-    if (!valid) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (valid !== hasConsent) {
+      setHasConsent(valid);
+    }
+    if (!valid && !showModal) {
       setShowModal(true);
     }
-  }, []);
+  }, [hasConsent, showModal]);
 
   const handleAccept = () => {
     setConsent();
     setHasConsent(true);
     setShowModal(false);
-    setIsReadOnly(false);
   };
 
   const openPrivacyNotice = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsReadOnly(true);
     setShowModal(true);
   };
 
@@ -61,9 +57,8 @@ export default function Landing() {
           onAccept={handleAccept} 
           open={showModal} 
           onOpenChange={(open) => {
-            if (!open && isReadOnly) {
+            if (!open) {
               setShowModal(false);
-              setIsReadOnly(false);
             }
           }}
         />

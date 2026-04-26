@@ -26,9 +26,6 @@ type Variables = {
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// Helper to check for test environment
-const checkIsTest = (c: any) => c.env.VITEST === 'true' || (globalThis as any).VITEST === 'true';
-
 // POST /api/transactions
 router.post("/", zValidator("json", newTransactionSchema, (result, c) => {
   if (!result.success) {
@@ -38,7 +35,7 @@ router.post("/", zValidator("json", newTransactionSchema, (result, c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const body = c.req.valid("json");
-  const isTest = checkIsTest(c);
+  const isTest = c.env.VITEST === 'true';
 
   // Ensure table exists in memory for tests
   if (isTest && c.env.TURSO_DATABASE_URL?.includes('memory')) {
@@ -69,7 +66,7 @@ router.get("/", zValidator("query", listFilterSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const query = c.req.valid("query");
-  const isTest = checkIsTest(c);
+  const isTest = c.env.VITEST === 'true';
 
   // Ensure table exists in memory for tests
   if (isTest && c.env.TURSO_DATABASE_URL?.includes('memory')) {
@@ -101,7 +98,7 @@ router.get("/:id", zValidator("param", transactionIdParamSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = checkIsTest(c);
+  const isTest = c.env.VITEST === 'true';
 
   try {
     const tx = await getTransactionById(db, id, userId);
@@ -129,7 +126,7 @@ router.patch(
     const db = c.get("db");
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const isTest = checkIsTest(c);
+    const isTest = c.env.VITEST === 'true';
 
     const patch: Partial<NewTransaction> = {};
     if (body.type) patch.type = body.type as "income" | "expense";
@@ -159,7 +156,7 @@ router.delete("/:id", zValidator("param", transactionIdParamSchema), async (c) =
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = checkIsTest(c);
+  const isTest = c.env.VITEST === 'true';
 
   try {
     const deleted = await deleteTransaction(db, id, userId);

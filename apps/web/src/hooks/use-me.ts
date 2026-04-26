@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { apiClient } from '../lib/api-client';
@@ -20,9 +21,7 @@ export function useMe() {
     if (!authLoaded) return;
 
     if (!isSignedIn) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setData(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }

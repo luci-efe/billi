@@ -13,8 +13,7 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Auth middleware
 app.use('/api/*', async (c, next) => {
-  // Use globalThis to safely check for VITEST without process.env in Workers
-  const isTest = c.env.VITEST === 'true' || (globalThis as Record<string, unknown>).VITEST === 'true';
+  const isTest = c.env.VITEST === 'true';
   
   if (isTest) {
     // Simple mock auth for tests
@@ -78,7 +77,7 @@ app.get('/api/me', async (c) => {
   const userId = c.get('userId');
   const db = c.get('db');
   
-  const isTest = c.env.VITEST === 'true' || (globalThis as Record<string, unknown>).VITEST === 'true';
+  const isTest = c.env.VITEST === 'true';
   let email = '';
   if (!isTest) {
     const { getAuth } = await import('@hono/clerk-auth');
