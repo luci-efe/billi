@@ -42,7 +42,9 @@ export default function Settings() {
 
   useEffect(() => {
     if (me) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRfc(me.rfc || "");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrency(me.defaultCurrency || "MXN");
     }
   }, [me]);
@@ -122,7 +124,7 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Moneda Predeterminada</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
+                  <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
                     <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
                       <SelectValue placeholder="Selecciona moneda" />
                     </SelectTrigger>

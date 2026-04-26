@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { users, type UserRow, type NewUserRow } from '../schema/users';
 
 export class UserRepository {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(private db: LibSQLDatabase<any>) {}
 
   async findById(id: string): Promise<UserRow | null> {

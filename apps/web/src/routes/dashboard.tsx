@@ -38,6 +38,24 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "@/hooks/use-dashboard";
 
+const barData = [
+  { name: "Lun", ingresos: 1200, egresos: 800 },
+  { name: "Mar", ingresos: 1500, egresos: 1100 },
+  { name: "Mie", ingresos: 900, egresos: 1200 },
+  { name: "Jue", ingresos: 2000, egresos: 1500 },
+  { name: "Vie", ingresos: 1800, egresos: 900 },
+  { name: "Sab", ingresos: 2500, egresos: 1800 },
+  { name: "Dom", ingresos: 3000, egresos: 2100 },
+];
+
+const pieData = [
+  { name: "Comida", value: 4500, color: "#818cf8" },
+  { name: "Transporte", value: 2100, color: "#6366f1" },
+  { name: "Renta", value: 12000, color: "#4f46e5" },
+  { name: "Entretenimiento", value: 1800, color: "#4338ca" },
+  { name: "Otros", value: 1200, color: "#3730a3" },
+];
+
 export default function Dashboard() {
   const { summary, recentTransactions, isLoading } = useDashboard();
 

@@ -110,7 +110,7 @@ export default function Transactions() {
             Exportar
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger>
               <Button className="bg-indigo-600 hover:bg-indigo-500 text-white">
                 <Plus className="mr-2 h-4 w-4" />
                 Nuevo Movimiento
@@ -185,35 +185,6 @@ export default function Transactions() {
                 <TabsTrigger value="expense" className="data-[state=active]:bg-slate-800">Egresos</TabsTrigger>
               </TabsList>
             </Tabs>
-...
-              <TableBody>
-                {filteredTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="border-slate-800 hover:bg-slate-800/30">
-                    <TableCell className="font-medium text-white">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-full",
-                          tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-400"
-                        )}>
-                          {tx.type === "income" ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                        </div>
-                        {tx.note || "Sin descripción"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-slate-800 border-slate-700 text-slate-400">
-                        {tx.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-slate-400">{formatDate(tx.occurredAt)}</TableCell>
-                    <TableCell className={cn(
-                      "text-right font-semibold",
-                      tx.type === "income" ? "text-emerald-400" : "text-white"
-                    )}>
-                      {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amountCents)}
-                    </TableCell>
-                    <TableCell>
-...
             <div className="relative w-full md:w-[300px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
               <Input
@@ -242,11 +213,11 @@ export default function Transactions() {
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "flex h-8 w-8 items-center justify-center rounded-full",
-                          tx.type === "ingreso" ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-400"
+                          tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-400"
                         )}>
-                          {tx.type === "ingreso" ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                          {tx.type === "income" ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                         </div>
-                        {tx.title}
+                        {tx.note || "Sin descripción"}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -254,12 +225,12 @@ export default function Transactions() {
                         {tx.category}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-400">{tx.date}</TableCell>
+                    <TableCell className="text-slate-400">{formatDate(tx.occurredAt)}</TableCell>
                     <TableCell className={cn(
                       "text-right font-semibold",
-                      tx.type === "ingreso" ? "text-emerald-400" : "text-white"
+                      tx.type === "income" ? "text-emerald-400" : "text-white"
                     )}>
-                      {tx.type === "ingreso" ? "+" : "-"}${Math.abs(tx.amount).toLocaleString()}
+                      {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amountCents)}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white">

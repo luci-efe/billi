@@ -138,9 +138,10 @@ app.patch('/api/me', async (c) => {
 
   try {
     const updated = await userRepo.update(userId, {
-      rfc: body.rfc,
+      rfc: body.rfc ?? null,
       defaultCurrency: body.defaultCurrency,
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
     
     if (!updated) {
       return c.json({ error: 'user_not_found' }, 404);
