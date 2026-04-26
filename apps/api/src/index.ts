@@ -13,6 +13,9 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+import aiRouter from './routes/ai';
+app.route('/ai', aiRouter);
+
 // Auth middleware
 app.use('/api/*', async (c, next) => {
   const isTest = c.env.VITEST === 'true';
@@ -91,6 +94,7 @@ app.use('/api/*', async (c, next) => {
 app.get('/health', (c) => c.json({ ok: true, service: 'billi-api' }));
 
 app.onError((err, c) => {
+  console.error('Hono Error:', err);
   return c.json({ error: 'internal_server_error', message: err.message }, 500);
 });
 

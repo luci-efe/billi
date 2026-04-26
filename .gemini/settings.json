@@ -20,6 +20,20 @@
       "args": [
         "@playwright/mcp@latest"
       ]
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
+    },
+    "mastra": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mastra/mcp-docs-server@latest"
+      ]
     }
   }
 }
