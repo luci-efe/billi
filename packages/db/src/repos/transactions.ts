@@ -36,7 +36,6 @@ function encodeCursor(occurredAt: number, id: string): string {
   if (typeof btoa !== 'undefined') {
     return btoa(str);
   }
-  // @ts-ignore
   if (typeof Buffer !== 'undefined') {
     return Buffer.from(str).toString("base64");
   }
@@ -52,7 +51,6 @@ function decodeCursor(cursor: string): { occurredAt: number; id: string } | null
     if (typeof atob !== 'undefined') {
       decoded = atob(cursor);
     } else {
-      // @ts-ignore
       if (typeof Buffer !== 'undefined') {
         decoded = Buffer.from(cursor, "base64").toString("utf-8");
       } else {
@@ -161,7 +159,7 @@ export async function updateTransaction(
 ): Promise<Transaction | null> {
   const now = Math.floor(Date.now() / 1000);
   
-  const values: any = {
+  const values: Record<string, unknown> = {
     updatedAt: now,
   };
 

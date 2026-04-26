@@ -16,7 +16,7 @@ describe("Backend Auth & /api/me", () => {
     });
     
     expect(res.status).toBe(200);
-    const body: any = await res.json();
+    const body = await res.json() as Record<string, unknown>;
     expect(body).toHaveProperty("userId");
     expect(body).toHaveProperty("email");
   });

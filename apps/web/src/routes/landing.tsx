@@ -14,10 +14,21 @@ import ConsentModal from "@/components/onboarding/consent-modal";
 import { getConsent, setConsent, isConsentValid } from "@/lib/consent";
 
 export default function Landing() {
-  const [hasConsent, setHasConsent] = useState<boolean>(false);
-  const [showModal, setShowModal] = useState<boolean>(false);
+  // Use lazy initializer to avoid setState in effect for initial value
+  const [hasConsent, setHasConsent] = useState<boolean>(() => {
+    const consent = getConsent();
+    return isConsentValid(consent);
+  });
+  
+  const [showModal, setShowModal] = useState<boolean>(() => {
+    const consent = getConsent();
+    return !isConsentValid(consent);
+  });
+
   const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
 
+  // Still need this for sync if localStorage changes externally (unlikely but good practice)
+  // or if we need to trigger logic that can't be in the initializer.
   useEffect(() => {
     const consent = getConsent();
     const valid = isConsentValid(consent);

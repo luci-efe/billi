@@ -13,7 +13,9 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Auth middleware
 app.use('/api/*', async (c, next) => {
-  const isTest = c.env.VITEST === 'true' || (typeof process !== 'undefined' && process.env.VITEST === 'true');
+  // Use globalThis to safely check for VITEST without process.env in Workers
+  const isTest = c.env.VITEST === 'true' || (globalThis as Record<string, unknown>).VITEST === 'true';
+  
   if (isTest) {
     // Simple mock auth for tests
     const authHeader = c.req.header('Authorization');
@@ -51,15 +53,11 @@ app.use('/api/*', async (c, next) => {
 app.get('/health', (c) => c.json({ ok: true, service: 'billi-api' }));
 
 // GET /api/me
-//
-// On first authenticated request we upsert the users mirror row from the Clerk
-// JWT claims. This keeps domain FKs stable without needing a webhook in MVP.
-// Subsequent calls are a cheap no-op upsert.
 app.get('/api/me', async (c) => {
   const userId = c.get('userId');
   const db = c.get('db');
   
-  const isTest = c.env.VITEST === 'true' || (typeof process !== 'undefined' && process.env.VITEST === 'true');
+  const isTest = c.env.VITEST === 'true' || (globalThis as Record<string, unknown>).VITEST === 'true';
   let email = '';
   if (!isTest) {
     const { getAuth } = await import('@hono/clerk-auth');
@@ -111,6 +109,5 @@ import transactionsRouter from './routes/transactions';
 
 // Feature routes land here as they're built:
 app.route('/api/transactions', transactionsRouter);
-//   app.route('/api/transactions/export.csv', exportRouter) // BIL-18
 
 export default app;

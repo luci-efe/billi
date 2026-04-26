@@ -1,6 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useAuth } from "@clerk/clerk-react";
+import { apiClient } from "../lib/api-client";
+import { useMe } from "../hooks/use-me";
+
+// Mock useAuth and useUser if needed, but here we test the real hook with mocked apiClient
+vi.mock("@clerk/clerk-react", () => ({
+  useAuth: vi.fn(),
+  useUser: vi.fn(),
+  useClerk: vi.fn(),
+  SignedIn: ({ children }: { children: React.ReactNode }) => <div data-testid="mock-signed-in">{children}</div>,
+  SignedOut: ({ children }: { children: React.ReactNode }) => <div data-testid="mock-signed-out">{children}</div>,
+}));
 
 vi.mock("../lib/api-client", () => ({
   apiClient: {
@@ -8,20 +19,13 @@ vi.mock("../lib/api-client", () => ({
   },
 }));
 
-import { apiClient } from "../lib/api-client";
-import { useMe } from "../hooks/use-me";
-
-// Mock useMe if needed, but here we test the real hook with mocked apiClient
-// Actually, the previous version of this test was mocking useAuth and apiClient
-// so useMe should be the real one.
-
 describe("useMe Hook Logic", () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
   it("returns null when signed out", async () => {
-    vi.mocked(useAuth).mockReturnValue({ isSignedIn: false, isLoaded: true } as any);
+    vi.mocked(useAuth).mockReturnValue({ isSignedIn: false, isLoaded: true } as unknown as ReturnType<typeof useAuth>);
     
     const TestComponent = () => {
       const { data, isLoading } = useMe();
@@ -34,11 +38,11 @@ describe("useMe Hook Logic", () => {
   });
 
   it("fetches data when signed in", async () => {
-    vi.mocked(useAuth).mockReturnValue({ isSignedIn: true, isLoaded: true } as any);
+    vi.mocked(useAuth).mockReturnValue({ isSignedIn: true, isLoaded: true } as unknown as ReturnType<typeof useAuth>);
     vi.mocked(apiClient.get).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ email: "test@example.com" }),
-    } as any);
+    } as unknown as Response);
 
     const TestComponent = () => {
       const { data, isLoading } = useMe();

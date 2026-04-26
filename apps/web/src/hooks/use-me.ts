@@ -11,8 +11,9 @@ export interface User {
 
 export function useMe() {
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
+  
   const [data, setData] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !authLoaded || (authLoaded && !!isSignedIn));
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {

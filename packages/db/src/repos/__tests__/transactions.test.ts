@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { transactions } from "../../schema/transactions";
 import { 
   createTransaction, 
   getTransactionById, 
   listTransactions, 
-  updateTransaction, 
-  deleteTransaction 
+  deleteTransaction,
+  type NewTransaction 
 } from "../transactions";
 import { createDbClient } from "../../client";
 import { sql } from "drizzle-orm";
@@ -56,14 +55,14 @@ describe("Transactions Repository", () => {
 
   describe("createTransaction", () => {
     it("should create a transaction with valid data", async () => {
-      const input = {
+      const input: NewTransaction & { id: string } = {
         id: "01HRAX0Z1A2B3C4D5E6F7G8H9J",
-        type: "expense" as const,
+        type: "expense",
         amountCents: 1000,
         currency: "MXN",
         category: "food",
         occurredAt: Math.floor(Date.now() / 1000),
-        source: "form" as const,
+        source: "form",
         note: "Tacos"
       };
 
@@ -72,10 +71,12 @@ describe("Transactions Repository", () => {
       
       const created = await getTransactionById(db, result.id, ownerId);
       expect(created).not.toBeNull();
-      expect(created).toMatchObject({
-        ...input,
-        ownerId,
-      });
+      if (created) {
+        expect(created).toMatchObject({
+          ...input,
+          ownerId,
+        });
+      }
     });
 
     it("should enforce validation constraints (amount > 0)", async () => {
@@ -88,19 +89,19 @@ describe("Transactions Repository", () => {
         source: "form" as const,
       };
 
-      await expect(createTransaction(db, ownerId, input as any)).rejects.toThrow();
+      await expect(createTransaction(db, ownerId, input as unknown as (NewTransaction & { id: string }))).rejects.toThrow();
     });
   });
 
   describe("Ownership Enforcement", () => {
     it("should not allow User B to see User A's transaction", async () => {
-      const input = {
+      const input: NewTransaction & { id: string } = {
         id: "01HRAX0Z1A2B3C4D5E6F7G8H9L",
-        type: "income" as const,
+        type: "income",
         amountCents: 5000,
         category: "salary",
         occurredAt: 123456789,
-        source: "form" as const,
+        source: "form",
       };
 
       const { id } = await createTransaction(db, ownerId, input);
@@ -110,14 +111,15 @@ describe("Transactions Repository", () => {
     });
 
     it("should not allow User B to delete User A's transaction", async () => {
-      const { id } = await createTransaction(db, ownerId, {
+      const input: NewTransaction & { id: string } = {
         id: "01HRAX0Z1A2B3C4D5E6F7G8H9M",
         type: "expense",
         amountCents: 100,
         category: "test",
         occurredAt: 123456789,
         source: "form",
-      } as any);
+      };
+      const { id } = await createTransaction(db, ownerId, input);
 
       const deleted = await deleteTransaction(db, id, otherOwnerId);
       expect(deleted).toBe(false);
@@ -135,7 +137,7 @@ describe("Transactions Repository", () => {
 
       const { items } = await listTransactions(db, ownerId, {});
       expect(items).toHaveLength(1);
-      expect(items[0].category).toBe("A");
+      expect(items[0]!.category).toBe("A");
     });
 
     it("should support ordering and pagination", async () => {
@@ -155,8 +157,10 @@ describe("Transactions Repository", () => {
       expect(firstPage.items).toHaveLength(2);
       expect(firstPage.nextCursor).toBeDefined();
 
-      const secondPage = await listTransactions(db, ownerId, { cursor: firstPage.nextCursor });
-      expect(secondPage.items).toHaveLength(3);
+      if (firstPage.nextCursor) {
+        const secondPage = await listTransactions(db, ownerId, { cursor: firstPage.nextCursor });
+        expect(secondPage.items).toHaveLength(3);
+      }
     });
   });
 });
