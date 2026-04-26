@@ -1,0 +1,12 @@
+{
+  "project": "billi",
+  "version": "1.0.0",
+  "tools": [
+    "claude-code",
+    "gemini"
+  ],
+  "testFramework": "vitest",
+  "testCommand": "pnpm test",
+  "coverageCommand": "pnpm test --coverage",
+  "specsafeVersion": "2.2.3"
+}

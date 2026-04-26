@@ -1,3 +1,13 @@
+CREATE TABLE `users` (
+	`id` text PRIMARY KEY NOT NULL,
+	`email` text DEFAULT '' NOT NULL,
+	`rfc` text,
+	`default_currency` text DEFAULT 'MXN' NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`consent_v` integer,
+	`consent_at` integer
+);
+--> statement-breakpoint
 CREATE TABLE `transactions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`owner_id` text NOT NULL,
@@ -21,4 +31,13 @@ CREATE TABLE `transactions` (
 --> statement-breakpoint
 CREATE INDEX `tx_owner_time_idx` ON `transactions` (`owner_id`,`occurred_at`);--> statement-breakpoint
 CREATE INDEX `tx_owner_cat_idx` ON `transactions` (`owner_id`,`category`);--> statement-breakpoint
-CREATE INDEX `tx_owner_type_idx` ON `transactions` (`owner_id`,`type`);
+CREATE INDEX `tx_owner_type_idx` ON `transactions` (`owner_id`,`type`);--> statement-breakpoint
+CREATE TABLE `categories` (
+	`id` text PRIMARY KEY NOT NULL,
+	`owner_id` text NOT NULL,
+	`name` text NOT NULL,
+	`type` text NOT NULL,
+	`icon` text,
+	`created_at` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`owner_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);

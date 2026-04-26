@@ -36,33 +36,29 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-const barData = [
-  { name: "Lun", ingresos: 1200, egresos: 800 },
-  { name: "Mar", ingresos: 1500, egresos: 1100 },
-  { name: "Mie", ingresos: 900, egresos: 1200 },
-  { name: "Jue", ingresos: 2000, egresos: 1500 },
-  { name: "Vie", ingresos: 1800, egresos: 900 },
-  { name: "Sab", ingresos: 2500, egresos: 1800 },
-  { name: "Dom", ingresos: 3000, egresos: 2100 },
-];
-
-const pieData = [
-  { name: "Comida", value: 4500, color: "#818cf8" },
-  { name: "Transporte", value: 2100, color: "#6366f1" },
-  { name: "Renta", value: 12000, color: "#4f46e5" },
-  { name: "Entretenimiento", value: 1800, color: "#4338ca" },
-  { name: "Otros", value: 1200, color: "#3730a3" },
-];
-
-const recentTransactions = [
-  { id: 1, title: "Starbucks Reforma", category: "Comida", amount: -125, date: "Hoy, 10:30 AM", type: "egreso" },
-  { id: 2, title: "Nómina Quincena", category: "Salario", amount: 15000, date: "Ayer, 09:00 AM", type: "ingreso" },
-  { id: 3, title: "Uber Casa", category: "Transporte", amount: -85, date: "Ayer, 08:45 PM", type: "egreso" },
-  { id: 4, title: "Netflix Suscripción", category: "Entretenimiento", amount: -199, date: "15 Abr, 2024", type: "egreso" },
-  { id: 5, title: "Transferencia SPEI", category: "Otros", amount: 2500, date: "14 Abr, 2024", type: "ingreso" },
-];
+import { useDashboard } from "@/hooks/use-dashboard";
 
 export default function Dashboard() {
+  const { summary, recentTransactions, isLoading } = useDashboard();
+
+  const formatCurrency = (cents: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+    }).format(cents / 100);
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp * 1000).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+    });
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-full text-slate-400">Cargando dashboard...</div>;
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -97,12 +93,12 @@ export default function Dashboard() {
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">Saldo Neto</CardDescription>
-            <CardTitle className="text-4xl font-bold text-white">$24,500.00</CardTitle>
+            <CardTitle className="text-4xl font-bold text-white">{formatCurrency(summary?.balance || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center text-emerald-400 text-xs font-medium">
               <ArrowUpRight className="mr-1 h-3 w-3" />
-              +12% vs mes anterior
+              Estado actual del mes
             </div>
           </CardContent>
         </Card>
@@ -110,12 +106,12 @@ export default function Dashboard() {
         <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">Ingresos Totales</CardDescription>
-            <CardTitle className="text-3xl font-bold text-emerald-400">$35,200.00</CardTitle>
+            <CardTitle className="text-3xl font-bold text-emerald-400">{formatCurrency(summary?.income || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center text-slate-500 text-xs">
               <TrendingUp className="mr-1 h-3 w-3" />
-              8 transacciones este periodo
+              Acumulado este periodo
             </div>
           </CardContent>
         </Card>
@@ -123,12 +119,12 @@ export default function Dashboard() {
         <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">Egresos Totales</CardDescription>
-            <CardTitle className="text-3xl font-bold text-rose-400">$10,700.00</CardTitle>
+            <CardTitle className="text-3xl font-bold text-rose-400">{formatCurrency(summary?.expense || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center text-slate-500 text-xs">
               <TrendingDown className="mr-1 h-3 w-3" />
-              24 transacciones este periodo
+              Acumulado este periodo
             </div>
           </CardContent>
         </Card>
@@ -220,33 +216,37 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full",
-                    tx.type === "ingreso" ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-400"
-                  )}>
-                    {tx.type === "ingreso" ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">{tx.title}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-slate-500">{tx.date}</p>
-                      <Badge variant="outline" className="text-[10px] h-4 bg-slate-800 border-slate-700 text-slate-400">
-                        {tx.category}
-                      </Badge>
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-full",
+                      tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-400"
+                    )}>
+                      {tx.type === "income" ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">{tx.note || "Sin descripción"}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-slate-500">{formatDate(tx.occurredAt)}</p>
+                        <Badge variant="outline" className="text-[10px] h-4 bg-slate-800 border-slate-700 text-slate-400">
+                          {tx.category}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
+                  <p className={cn(
+                    "font-semibold",
+                    tx.type === "income" ? "text-emerald-400" : "text-white"
+                  )}>
+                    {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amountCents)}
+                  </p>
                 </div>
-                <p className={cn(
-                  "font-semibold",
-                  tx.type === "ingreso" ? "text-emerald-400" : "text-white"
-                )}>
-                  {tx.type === "ingreso" ? "+" : "-"}${Math.abs(tx.amount).toLocaleString()}
-                </p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="text-center py-8 text-slate-500 italic">No hay transacciones recientes</div>
+            )}
           </div>
         </CardContent>
       </Card>

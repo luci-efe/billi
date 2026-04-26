@@ -7,6 +7,8 @@ import { sql } from 'drizzle-orm';
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().default(''),
+  rfc: text('rfc'),
+  defaultCurrency: text('default_currency').notNull().default('MXN'),
   createdAt: integer('created_at')
     .notNull()
     .default(sql`(unixepoch())`),

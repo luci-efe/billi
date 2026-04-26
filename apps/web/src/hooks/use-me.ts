@@ -6,6 +6,8 @@ import { apiClient } from '../lib/api-client';
 export interface User {
   userId: string;
   email: string;
+  rfc: string | null;
+  defaultCurrency: string;
   consentAccepted: boolean;
   consentVersion: number | null;
 }
@@ -56,4 +58,37 @@ export function useMe() {
     error,
     mutate: (newData: User | null) => setData(newData),
   };
+}
+
+export function useUpdateMe() {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const { mutate } = useMe();
+
+  const updateMe = async (values: { rfc?: string; defaultCurrency?: string }) => {
+    setIsUpdating(true);
+    setError(null);
+    try {
+      const res = await apiClient.patch('/api/me', {
+        body: JSON.stringify(values),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      const updatedUser = await res.json();
+      mutate(updatedUser);
+      return updatedUser;
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error('Unknown error');
+      setError(e);
+      throw e;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return { updateMe, isUpdating, error };
 }

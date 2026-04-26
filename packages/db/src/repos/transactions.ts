@@ -192,3 +192,41 @@ export async function deleteTransaction(
   
   return result.length > 0;
 }
+
+export async function getSummary(
+  db: DbClient,
+  ownerId: string,
+  from: number,
+  to: number
+): Promise<{ income: number; expense: number; balance: number }> {
+  const items = await db
+    .select({
+      type: transactions.type,
+      amountCents: transactions.amountCents,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.ownerId, ownerId),
+        gte(transactions.occurredAt, from),
+        lte(transactions.occurredAt, to)
+      )
+    );
+
+  let income = 0;
+  let expense = 0;
+
+  for (const item of items) {
+    if (item.type === 'income') {
+      income += item.amountCents;
+    } else {
+      expense += item.amountCents;
+    }
+  }
+
+  return {
+    income,
+    expense,
+    balance: income - expense,
+  };
+}
