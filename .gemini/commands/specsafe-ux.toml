@@ -1,0 +1,2 @@
+description = "Create UX design principles, design system foundations, and accessibility guidelines. Best used after PRD creation."
+prompt = "Activate the specsafe-ux skill. {{args}}"

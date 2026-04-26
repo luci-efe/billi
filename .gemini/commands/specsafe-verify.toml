@@ -1,0 +1,2 @@
+description = "Run tests and validate implementation against spec. Loops back on failure. Moves spec from CODE to QA stage."
+prompt = "Activate the specsafe-verify skill. {{args}}"

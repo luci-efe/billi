@@ -1,12 +1,14 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { users } from '@billi/db/schema';
+import { UserRepository } from '@billi/db';
 import type { Env } from './env';
 import { createDb } from './db';
 
 type Variables = {
   userId: string;
   db: ReturnType<typeof createDb>;
+  userRepo: UserRepository;
 };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -14,6 +16,7 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 // Auth middleware
 app.use('/api/*', async (c, next) => {
   const isTest = c.env.VITEST === 'true';
+  const db = createDb(c.env);
   
   if (isTest) {
     // Simple mock auth for tests
@@ -29,16 +32,34 @@ app.use('/api/*', async (c, next) => {
     if (!c.env.TURSO_DATABASE_URL || c.env.TURSO_DATABASE_URL.includes('replace_me')) {
       // Create a minimal mock DB that satisfies the interface for basic tests
       const mockDb = {
-        run: async () => ({}),
-        select: () => ({ from: () => ({ where: () => ({ get: async () => null, all: async () => [] }) }) }),
-        insert: () => ({ values: () => ({ onConflictDoUpdate: () => ({}) }) }),
-        update: () => ({ set: () => ({ where: () => ({}) }) }),
-        delete: () => ({ where: () => ({ returning: () => ([]) }) }),
+        run: async () => ({ success: true }),
+        select: () => ({ 
+          from: () => ({ 
+            where: () => ({ 
+              get: async () => null, 
+              all: async () => [], 
+              limit: () => ({ 
+                get: async () => null, 
+                all: async () => [] 
+              }) 
+            }) 
+          }) 
+        }),
+        insert: () => ({ values: () => ({ onConflictDoUpdate: async () => ({}) }) }),
+        update: () => ({ set: () => ({ where: async () => ({}) }) }),
+        delete: () => ({ where: () => ({ returning: async () => ([]) }) }),
+        query: {
+          users: { findFirst: async () => null },
+          transactions: { findMany: async () => [] },
+        },
       };
       // @ts-expect-error - Mock DB for tests
       c.set('db', mockDb);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      c.set('userRepo', new UserRepository(mockDb as any));
     } else {
-      c.set('db', createDb(c.env));
+      c.set('db', db);
+      c.set('userRepo', new UserRepository(db));
     }
     
     await next();
@@ -59,7 +80,8 @@ app.use('/api/*', async (c, next) => {
         return c.json({ error: 'unauthenticated' }, 401);
       }
       c.set('userId', auth.userId);
-      c.set('db', createDb(c.env));
+      c.set('db', db);
+      c.set('userRepo', new UserRepository(db));
       await next();
     }
   }
@@ -75,7 +97,7 @@ app.onError((err, c) => {
 // GET /api/me
 app.get('/api/me', async (c) => {
   const userId = c.get('userId');
-  const db = c.get('db');
+  const userRepo = c.get('userRepo');
   
   const isTest = c.env.VITEST === 'true';
   let email = '';
@@ -87,32 +109,16 @@ app.get('/api/me', async (c) => {
     email = 'test@example.com';
   }
 
-  // Ensure tables exist in memory for tests
-  if (isTest && c.env.TURSO_DATABASE_URL?.includes('memory')) {
-    const { sql } = await import('drizzle-orm');
-    try {
-      await db.run(sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT, consent_v INTEGER, consent_at INTEGER, created_at INTEGER DEFAULT (unixepoch()) NOT NULL)`);
-    } catch {
-      // Ignore if mock doesn't support run
-    }
-  }
-
   try {
-    await db
-      .insert(users)
-      .values({ id: userId, email })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: { email },
-      });
-
-    const row = await db.select().from(users).where(eq(users.id, userId)).get();
+    const user = await userRepo.upsert({ id: userId, email });
 
     return c.json({
-      userId,
-      email: row?.email ?? email,
-      consentVersion: row?.consentV ?? null,
-      consentAccepted: row?.consentV != null,
+      userId: user.id,
+      email: user.email,
+      rfc: user.rfc,
+      defaultCurrency: user.defaultCurrency,
+      consentVersion: user.consentV ?? null,
+      consentAccepted: user.consentV != null,
     });
   } catch (err) {
     if (isTest) {
@@ -120,10 +126,51 @@ app.get('/api/me', async (c) => {
       return c.json({
         userId,
         email,
+        rfc: null,
+        defaultCurrency: 'MXN',
         consentVersion: null,
         consentAccepted: false,
       });
     }
+    throw err;
+  }
+});
+
+// PATCH /api/me
+app.patch('/api/me', async (c) => {
+  const userId = c.get('userId');
+  const userRepo = c.get('userRepo');
+  const body = await c.req.json<{ rfc?: string; defaultCurrency?: string }>();
+  
+  // Basic validation
+  if (body.rfc && body.rfc.length > 13) {
+    return c.json({ error: 'invalid_rfc_length' }, 400);
+  }
+  
+  if (body.defaultCurrency && !['MXN', 'USD'].includes(body.defaultCurrency)) {
+    return c.json({ error: 'invalid_currency' }, 400);
+  }
+
+  try {
+    const updated = await userRepo.update(userId, {
+      rfc: body.rfc ?? null,
+      defaultCurrency: body.defaultCurrency,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    
+    if (!updated) {
+      return c.json({ error: 'user_not_found' }, 404);
+    }
+
+    return c.json({
+      userId: updated.id,
+      email: updated.email,
+      rfc: updated.rfc,
+      defaultCurrency: updated.defaultCurrency,
+      consentVersion: updated.consentV ?? null,
+      consentAccepted: updated.consentV != null,
+    });
+  } catch (err) {
     throw err;
   }
 });
@@ -156,8 +203,34 @@ app.post('/api/me/consent', async (c) => {
 });
 
 import transactionsRouter from './routes/transactions';
+import { getSummary } from '@billi/db/repos/transactions';
 
 // Feature routes land here as they're built:
 app.route('/api/transactions', transactionsRouter);
+
+// GET /api/dashboard/summary
+app.get('/api/dashboard/summary', async (c) => {
+  const userId = c.get('userId');
+  const db = c.get('db');
+  
+  // Default to current month
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  
+  const from = Math.floor(firstDay.getTime() / 1000);
+  const to = Math.floor(lastDay.getTime() / 1000);
+
+  try {
+    const summary = await getSummary(db, userId, from, to);
+    return c.json(summary);
+  } catch (err) {
+    const isTest = c.env.VITEST === 'true';
+    if (isTest) {
+      return c.json({ income: 0, expense: 0, balance: 0 });
+    }
+    throw err;
+  }
+});
 
 export default app;

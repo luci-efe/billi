@@ -1,0 +1,2 @@
+description = "Show project dashboard with spec counts by stage, active specs, completed specs, and metrics."
+prompt = "Activate the specsafe-status skill. {{args}}"

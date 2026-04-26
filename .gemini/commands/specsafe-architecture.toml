@@ -1,0 +1,2 @@
+description = "Create a system architecture document with design decisions, patterns, and component structure. Requires a PRD."
+prompt = "Activate the specsafe-architecture skill. {{args}}"

@@ -1,0 +1,2 @@
+description = "Facilitate focused, opt-in multi-persona planning or review sessions when a decision benefits from structured perspective diversity."
+prompt = "Activate the specsafe-party-mode skill. {{args}}"

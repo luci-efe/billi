@@ -1,0 +1,2 @@
+description = "Refine an existing spec with detailed requirements, acceptance criteria, scenarios, and implementation plan."
+prompt = "Activate the specsafe-spec skill. {{args}}"

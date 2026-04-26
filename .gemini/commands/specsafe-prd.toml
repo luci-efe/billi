@@ -1,0 +1,2 @@
+description = "Create a Product Requirements Document from a product brief. Defines user journeys, functional requirements, non-functional requirements, and scope."
+prompt = "Activate the specsafe-prd skill. {{args}}"

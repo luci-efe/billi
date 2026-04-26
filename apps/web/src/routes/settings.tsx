@@ -1,5 +1,8 @@
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/clerk-react";
+import { useMe, useUpdateMe } from "@/hooks/use-me";
 import { 
-  User, 
+  User as UserIcon, 
   CreditCard, 
   Shield, 
   Bell, 
@@ -20,8 +23,43 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 export default function Settings() {
+  const { user } = useUser();
+  const { data: me, isLoading } = useMe();
+  const { updateMe, isUpdating } = useUpdateMe();
+
+  const [rfc, setRfc] = useState("");
+  const [currency, setCurrency] = useState("MXN");
+
+  useEffect(() => {
+    if (me) {
+      setRfc(me.rfc || "");
+      setCurrency(me.defaultCurrency || "MXN");
+    }
+  }, [me]);
+
+  const handleSave = async () => {
+    try {
+      await updateMe({ rfc, defaultCurrency: currency });
+      toast.success("Perfil actualizado correctamente");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al actualizar perfil");
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-full text-slate-400">Cargando perfil...</div>;
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto pb-20 lg:pb-0">
       <div className="flex flex-col gap-1">
@@ -42,42 +80,68 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="text-white">Información Personal</CardTitle>
               <CardDescription className="text-slate-400">
-                Actualiza tu foto y detalles personales aquí.
+                Tus detalles personales se sincronizan con Clerk.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6">
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                  <User className="h-10 w-10" />
-                </div>
+                {user?.imageUrl ? (
+                  <img src={user.imageUrl} className="h-24 w-24 rounded-full border border-slate-800" alt="Avatar" />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                    <UserIcon className="h-10 w-10" />
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <Button variant="outline" className="border-slate-700 bg-slate-800 text-white hover:bg-slate-700">
-                    Cambiar Foto
-                  </Button>
-                  <p className="text-xs text-slate-500">JPG, GIF o PNG. Max 2MB.</p>
+                  <p className="text-sm font-medium text-white">{user?.fullName || "Usuario Billi"}</p>
+                  <p className="text-xs text-slate-500">Gestionado vía Clerk Auth</p>
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Nombre</Label>
-                  <Input id="firstName" defaultValue="Demo" className="bg-slate-950 border-slate-800" />
+                  <Input id="firstName" value={user?.firstName || ""} disabled className="bg-slate-950 border-slate-800 opacity-70" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Apellido</Label>
-                  <Input id="lastName" defaultValue="User" className="bg-slate-950 border-slate-800" />
+                  <Input id="lastName" value={user?.lastName || ""} disabled className="bg-slate-950 border-slate-800 opacity-70" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Correo Electrónico</Label>
-                  <Input id="email" defaultValue="demo@billi.finance" className="bg-slate-950 border-slate-800" />
+                  <Input id="email" value={user?.primaryEmailAddress?.emailAddress || ""} disabled className="bg-slate-950 border-slate-800 opacity-70" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="rfc">RFC (Opcional para IA Fiscal)</Label>
-                  <Input id="rfc" placeholder="XXXX000000XXX" className="bg-slate-950 border-slate-800 uppercase" />
+                  <Input 
+                    id="rfc" 
+                    placeholder="XXXX000000XXX" 
+                    value={rfc}
+                    onChange={(e) => setRfc(e.target.value)}
+                    className="bg-slate-950 border-slate-800 uppercase" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Moneda Predeterminada</Label>
+                  <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
+                    <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
+                      <SelectValue placeholder="Selecciona moneda" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      <SelectItem value="MXN">Pesos Mexicanos (MXN)</SelectItem>
+                      <SelectItem value="USD">Dólares (USD)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="border-t border-slate-800 pt-6">
-              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white">Guardar Cambios</Button>
+              <Button 
+                onClick={handleSave} 
+                disabled={isUpdating}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white"
+              >
+                {isUpdating ? "Guardando..." : "Guardar Cambios"}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
