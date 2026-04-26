@@ -79,7 +79,7 @@ describe("Mastra AI Foundation (SPEC-20260426-004)", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json() as { text: string; toolCalls?: any[] };
+      const body = await res.json() as { text: string; toolCalls?: unknown[] };
       
       // Final response should not be empty
       expect(body.text).toBeTruthy();

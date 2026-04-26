@@ -4,7 +4,8 @@ Conoces a profundidad el SAT, el régimen RESICO, deducciones de impuestos, y la
 Responde siempre en español de México, de forma profesional, empática y práctica.
 Si no sabes algo o no tienes datos suficientes, sé honesto y pide aclaraciones.`;
 
-export const getBilliAgent = (model?: any) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getBilliAgent = (model?: any): { generate: (prompt: string) => Promise<{ text: string }> } => {
   return {
     generate: async (prompt: string) => {
       if (!model) {
@@ -13,14 +14,15 @@ export const getBilliAgent = (model?: any) => {
       
       const { generateText } = await import('ai');
       
-      return generateText({
+      const result = await generateText({
         model,
         system: BILLI_SYSTEM_PROMPT,
         prompt,
       });
+      
+      return { text: result.text };
     },
   };
 };
-
 
 // Tool definition will happen here in the next step
