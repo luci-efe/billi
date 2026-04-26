@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { 
   PiggyBank, 
@@ -8,19 +9,77 @@ import {
   Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ValueProp from "@/components/onboarding/value-prop";
+import ConsentModal from "@/components/onboarding/consent-modal";
+import { getConsent, setConsent, isConsentValid } from "@/lib/consent";
 
 export default function Landing() {
+  const [hasConsent, setHasConsent] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
+
+  useEffect(() => {
+    const consent = getConsent();
+    const valid = isConsentValid(consent);
+    setHasConsent(valid);
+    if (!valid) {
+      setShowModal(true);
+    }
+  }, []);
+
+  const handleAccept = () => {
+    setConsent();
+    setHasConsent(true);
+    setShowModal(false);
+    setIsReadOnly(false);
+  };
+
+  const openPrivacyNotice = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsReadOnly(true);
+    setShowModal(true);
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50 overflow-hidden">
-      {/* Hero Section */}
+      {/* Consent Modal */}
+      {showModal && (
+        <ConsentModal 
+          onAccept={handleAccept} 
+          open={showModal} 
+          onOpenChange={(open) => {
+            if (!open && isReadOnly) {
+              setShowModal(false);
+              setIsReadOnly(false);
+            }
+          }}
+        />
+      )}
+
+      {/* Header */}
       <header className="container mx-auto px-4 py-6 flex justify-between items-center relative z-10">
         <div className="flex items-center gap-2">
           <PiggyBank className="h-8 w-8 text-indigo-500" />
           <span className="font-bold text-2xl tracking-tight text-white">Billi</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link to="/" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Login</Link>
-          <Button className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full px-6">Empieza Gratis</Button>
+          <Link 
+            to="/sign-in" 
+            data-testid="cta-sign-in"
+            className={`text-sm font-medium transition-colors ${!hasConsent ? 'text-slate-600 pointer-events-none' : 'text-slate-400 hover:text-white'}`}
+            aria-disabled={!hasConsent}
+          >
+            Login
+          </Link>
+          <Link to="/sign-up" className={!hasConsent ? 'pointer-events-none' : ''}>
+            <Button 
+              data-testid="cta-sign-up"
+              disabled={!hasConsent}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full px-6"
+            >
+              Empieza Gratis
+            </Button>
+          </Link>
         </div>
       </header>
 
@@ -42,8 +101,12 @@ export default function Landing() {
             La plataforma multimodal que entiende tu dinero. Registra, analiza y consulta con IA especializada en el contexto financiero mexicano.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/">
-              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full px-8 h-14 text-lg font-semibold group">
+            <Link to="/" className={!hasConsent ? 'pointer-events-none' : ''}>
+              <Button 
+                size="lg" 
+                disabled={!hasConsent}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full px-8 h-14 text-lg font-semibold group"
+              >
                 Probar Dashboard
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -53,6 +116,9 @@ export default function Landing() {
             </Button>
           </div>
         </section>
+
+        {/* Value Prop Section */}
+        <ValueProp />
 
         {/* Features grid */}
         <section className="container mx-auto px-4 py-20 border-t border-slate-900">
@@ -100,7 +166,7 @@ export default function Landing() {
         </div>
         <p className="text-slate-500 text-sm">© 2026 Billi Finance. Todos los derechos reservados.</p>
         <div className="flex gap-6">
-          <a href="#" className="text-slate-500 hover:text-white transition-colors text-sm">Privacidad</a>
+          <a href="#" onClick={openPrivacyNotice} className="text-slate-500 hover:text-white transition-colors text-sm">Aviso de privacidad</a>
           <a href="#" className="text-slate-500 hover:text-white transition-colors text-sm">Términos</a>
         </div>
       </footer>

@@ -1,0 +1,133 @@
+import { describe, it, expect } from "vitest";
+import { SELF } from "cloudflare:test";
+
+describe("Transactions API", () => {
+  const mockToken = "Bearer user_123";
+  const otherUserToken = "Bearer user_456";
+
+  describe("POST /api/transactions", () => {
+    it("should create a transaction with valid data", async () => {
+      const payload = {
+        type: "expense",
+        amountCents: 12500,
+        currency: "MXN",
+        category: "food",
+        occurredAt: 1713916800,
+        source: "form"
+      };
+
+      const res = await SELF.fetch("http://example.com/api/transactions", {
+        method: "POST",
+        headers: {
+          Authorization: mockToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      expect(res.status).toBe(201);
+      const body: any = await res.json();
+      expect(body).toHaveProperty("id");
+    });
+
+    it("should return 400 for invalid source", async () => {
+      const payload = {
+        type: "expense",
+        amountCents: 100,
+        category: "test",
+        occurredAt: 123456789,
+        source: "invalid_source"
+      };
+
+      const res = await SELF.fetch("http://example.com/api/transactions", {
+        method: "POST",
+        headers: {
+          Authorization: mockToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      expect(res.status).toBe(400);
+      const body: any = await res.json();
+      expect(body.error).toBe("validation_failed");
+    });
+  });
+
+  describe("GET /api/transactions", () => {
+    it("should list transactions for the authenticated user", async () => {
+      const res = await SELF.fetch("http://example.com/api/transactions", {
+        headers: { Authorization: mockToken },
+      });
+
+      expect(res.status).toBe(200);
+      const body: any = await res.json();
+      expect(Array.isArray(body.items)).toBe(true);
+    });
+
+    it("should return 401 without auth", async () => {
+      const res = await SELF.fetch("http://example.com/api/transactions");
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("GET /api/transactions/:id", () => {
+    it("should return 404 for transaction owned by another user", async () => {
+      // Assuming ID 'tx_abc' belongs to user_123
+      const res = await SELF.fetch("http://example.com/api/transactions/tx_abc", {
+        headers: { Authorization: otherUserToken },
+      });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("PATCH /api/transactions/:id", () => {
+    it("should update an existing transaction", async () => {
+      const res = await SELF.fetch("http://example.com/api/transactions/tx_abc", {
+        method: "PATCH",
+        headers: {
+          Authorization: mockToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ category: "updated" }),
+      });
+
+      // This will fail initially as tx_abc doesn't exist
+      expect(res.status).toBe(200);
+    });
+
+    it("should return 404 for cross-owner update", async () => {
+      const res = await SELF.fetch("http://example.com/api/transactions/tx_abc", {
+        method: "PATCH",
+        headers: {
+          Authorization: otherUserToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ category: "hacked" }),
+      });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("DELETE /api/transactions/:id", () => {
+    it("should delete own transaction", async () => {
+      const res = await SELF.fetch("http://example.com/api/transactions/tx_abc", {
+        method: "DELETE",
+        headers: { Authorization: mockToken },
+      });
+
+      expect(res.status).toBe(204);
+    });
+
+    it("should return 404 for cross-owner delete", async () => {
+      const res = await SELF.fetch("http://example.com/api/transactions/tx_abc", {
+        method: "DELETE",
+        headers: { Authorization: otherUserToken },
+      });
+
+      expect(res.status).toBe(404);
+    });
+  });
+});

@@ -6,7 +6,7 @@
     "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "types": []
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules", "migrations"]
