@@ -21,9 +21,9 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
 
 export const apiClient = {
   get: (path: string, options?: RequestInit) => apiFetch(path, { ...options, method: 'GET' }),
-  post: (path: string, body?: any, options?: RequestInit) => 
+  post: (path: string, body?: unknown, options?: RequestInit) => 
     apiFetch(path, { ...options, method: 'POST', body: JSON.stringify(body) }),
-  patch: (path: string, body?: any, options?: RequestInit) => 
+  patch: (path: string, body?: unknown, options?: RequestInit) => 
     apiFetch(path, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   delete: (path: string, options?: RequestInit) => apiFetch(path, { ...options, method: 'DELETE' }),
 };

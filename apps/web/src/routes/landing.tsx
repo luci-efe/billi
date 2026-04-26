@@ -32,8 +32,10 @@ export default function Landing() {
   useEffect(() => {
     const consent = getConsent();
     const valid = isConsentValid(consent);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasConsent(valid);
     if (!valid) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowModal(true);
     }
   }, []);

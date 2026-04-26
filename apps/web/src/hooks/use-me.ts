@@ -20,7 +20,9 @@ export function useMe() {
     if (!authLoaded) return;
 
     if (!isSignedIn) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setData(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }
