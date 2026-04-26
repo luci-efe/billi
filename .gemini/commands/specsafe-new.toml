@@ -1,0 +1,2 @@
+description = "Create a new spec with a unique ID, initial requirements, and scope. Use when starting a new feature or change."
+prompt = "Activate the specsafe-new skill. {{args}}"

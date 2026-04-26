@@ -1,0 +1,2 @@
+description = "Create custom SpecSafe skills that integrate into the TDD pipeline. Build your own workflow steps, quality gates, or utility skills."
+prompt = "Activate the specsafe-skill-creator skill. {{args}}"

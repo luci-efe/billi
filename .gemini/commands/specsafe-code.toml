@@ -1,0 +1,2 @@
+description = "TDD implementation using red-green-refactor cycle. Unskips tests one at a time and writes minimum code to pass."
+prompt = "Activate the specsafe-code skill. {{args}}"

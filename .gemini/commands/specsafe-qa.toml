@@ -1,0 +1,2 @@
+description = "Full QA validation with report generation and GO/NO-GO recommendation. Validates all requirements and scenarios."
+prompt = "Activate the specsafe-qa skill. {{args}}"

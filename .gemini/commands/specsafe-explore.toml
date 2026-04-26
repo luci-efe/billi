@@ -1,0 +1,2 @@
+description = "Pre-spec exploration and research mode. Use before creating a spec when the problem space needs investigation."
+prompt = "Activate the specsafe-explore skill. {{args}}"
