@@ -12,15 +12,18 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/openai": "^3.0.53",
     "@billi/db": "workspace:*",
     "@clerk/backend": "^1.18.0",
     "@hono/clerk-auth": "^2.0.0",
     "@hono/zod-validator": "^0.4.0",
     "@libsql/client": "^0.14.0",
+    "ai": "^6.0.168",
     "drizzle-orm": "0.38.4",
     "hono": "^4.6.0",
     "ulid": "^3.0.2",
-    "zod": "^3.24.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.5.41",
