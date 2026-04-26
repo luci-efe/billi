@@ -5,7 +5,6 @@ export default defineWorkersConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'snakecase-keys': path.resolve(__dirname, '../../node_modules/snakecase-keys/index.js'),
     },
   },
   test: {
