@@ -93,6 +93,38 @@ router.get("/", zValidator("query", listFilterSchema), async (c) => {
   }
 });
 
+// GET /api/transactions/export
+router.get("/export", zValidator("query", listFilterSchema), async (c) => {
+  const userId = c.get("userId");
+  const db = c.get("db");
+  const query = c.req.valid("query");
+
+  const filter: ListFilter = { limit: 1000 }; // Higher limit for export
+  if (query.type) filter.type = query.type as "income" | "expense";
+  if (query.category) filter.category = query.category;
+  if (query.from !== undefined) filter.from = query.from;
+  if (query.to !== undefined) filter.to = query.to;
+
+  try {
+    const { items } = await listTransactions(db, userId, filter);
+    
+    const headers = ['Concepto', 'Categoría', 'Fecha', 'Tipo', 'Monto'];
+    const rows = items.map(tx => {
+      const date = new Date(tx.occurredAt * 1000).toISOString().split('T')[0];
+      const amount = (tx.amountCents / 100).toFixed(2);
+      return `"${tx.note || ''}","${tx.category}","${date}","${tx.type}","${amount}"`;
+    });
+    const csvContent = [headers.join(','), ...rows].join('\n');
+
+    return c.text(csvContent, 200, {
+      'Content-Type': 'text/csv',
+      'Content-Disposition': `attachment; filename="billi_export_${new Date().getTime()}.csv"`,
+    });
+  } catch (err) {
+    return c.json({ error: "export_failed", message: (err as Error).message }, 500);
+  }
+});
+
 // GET /api/transactions/:id
 router.get("/:id", zValidator("param", transactionIdParamSchema), async (c) => {
   const userId = c.get("userId");
