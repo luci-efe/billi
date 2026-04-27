@@ -36,6 +36,7 @@ router.post('/chat', async (c) => {
     const agent = mastra.getAgent('billiAgent');
     
     // For Mastra v1, memory property expects specific structure or just a threadId string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const generateOptions: any = {
       requestContext,
       memory: {
@@ -47,10 +48,12 @@ router.post('/chat', async (c) => {
       generateOptions.memory.thread = threadId;
     }
 
-    const result = await agent.generate(message, generateOptions);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await agent.generate(message, generateOptions as any);
 
     // In Mastra v1, threadId might be in different places depending on result shape
     // Extracting it safely
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const responseThreadId = threadId || (result as any).threadId || (result as any).memory?.threadId;
 
     return c.json({ 

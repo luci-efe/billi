@@ -27,6 +27,7 @@ export const getTransactionsTool = createTool({
       from: from ?? undefined,
       to: to ?? undefined,
       limit: limit ?? undefined,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return { transactions: result.items };
@@ -82,6 +83,7 @@ export const addTransactionTool = createTool({
       note: input.note ?? null,
       occurredAt: input.occurredAt ?? Math.floor(Date.now() / 1000),
       source: 'chat',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return { success: true, id, message: 'Transacción registrada con éxito' };
