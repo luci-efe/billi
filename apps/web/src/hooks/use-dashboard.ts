@@ -7,6 +7,17 @@ export interface DashboardSummary {
   balance: number;
 }
 
+export interface CategorySummary {
+  name: string;
+  value: number;
+}
+
+export interface DashboardData {
+  current: DashboardSummary;
+  previous: DashboardSummary;
+  categories: CategorySummary[];
+}
+
 export interface Transaction {
   id: string;
   type: 'income' | 'expense';
@@ -16,8 +27,8 @@ export interface Transaction {
   note: string | null;
 }
 
-export function useDashboard() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+export function useDashboard(period: string = 'month') {
+  const [data, setData] = useState<DashboardData | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -27,14 +38,14 @@ export function useDashboard() {
       try {
         setIsLoading(true);
         const [summaryRes, txRes] = await Promise.all([
-          apiClient.get('/api/dashboard/summary'),
+          apiClient.get(`/api/dashboard/summary?period=${period}`),
           apiClient.get('/api/transactions?limit=5'),
         ]);
 
         if (summaryRes.ok && txRes.ok) {
           const summaryData = await summaryRes.json();
           const txData = await txRes.json();
-          setSummary(summaryData);
+          setData(summaryData);
           setRecentTransactions(txData.items || []);
         } else {
           throw new Error('Failed to fetch dashboard data');
@@ -47,7 +58,7 @@ export function useDashboard() {
     }
 
     fetchData();
-  }, []);
+  }, [period]);
 
-  return { summary, recentTransactions, isLoading, error };
+  return { data, recentTransactions, isLoading, error };
 }
