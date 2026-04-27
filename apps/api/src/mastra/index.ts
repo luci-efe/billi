@@ -15,3 +15,13 @@ export function getMastra(env: Env) {
     agents: { billiAgent },
   });
 }
+
+// Temporary static export for CLI migrations
+export const mastra = new Mastra({
+  storage: new LibSQLStore({
+    id: 'billi-storage-migration',
+    url: process.env.TURSO_DATABASE_URL || 'libsql://temp.db',
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  }),
+  agents: { billiAgent },
+});
