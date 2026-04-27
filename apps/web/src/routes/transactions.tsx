@@ -113,7 +113,7 @@ export default function Transactions() {
       document.body.removeChild(link);
       
       toast.success("Exportación completada");
-    } catch (error) {
+    } catch {
       toast.error("Error al generar el archivo CSV");
     }
   };
