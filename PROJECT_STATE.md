@@ -9,7 +9,7 @@
 | ID | Name | Stage | Created | Updated |
 |----|------|-------|---------|---------|
 | SPEC-20260426-004 | mastra-ai-foundation | QA | 2026-04-26 | 2026-04-26 |
-| SPEC-20260426-005 | transaction-management-export | SPEC | 2026-04-26 | 2026-04-26 |
+| SPEC-20260426-005 | transaction-management-export | QA | 2026-04-26 | 2026-04-26 |
 | SPEC-20260426-006 | financial-analytics-dashboard | QA | 2026-04-26 | 2026-04-26 |
 
 ## Completed Specs
