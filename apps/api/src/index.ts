@@ -4,6 +4,9 @@ import { users } from '@billi/db/schema';
 import { UserRepository } from '@billi/db';
 import type { Env } from './env';
 import { createDb } from './db';
+import aiRouter from './routes/ai';
+import transactionsRouter from './routes/transactions';
+import { getSummary } from '@billi/db/repos/transactions';
 
 type Variables = {
   userId: string;
@@ -13,10 +16,7 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-import aiRouter from './routes/ai';
-app.route('/ai', aiRouter);
-
-// Auth middleware
+// Auth middleware - must be before protected routes
 app.use('/api/*', async (c, next) => {
   const isTest = c.env.VITEST === 'true';
   const db = createDb(c.env);
@@ -56,8 +56,8 @@ app.use('/api/*', async (c, next) => {
           transactions: { findMany: async () => [] },
         },
       };
-      // @ts-expect-error - Mock DB for tests
-      c.set('db', mockDb);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      c.set('db', mockDb as any);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       c.set('userRepo', new UserRepository(mockDb as any));
     } else {
@@ -97,6 +97,10 @@ app.onError((err, c) => {
   console.error('Hono Error:', err);
   return c.json({ error: 'internal_server_error', message: err.message }, 500);
 });
+
+// Feature routes land here
+app.route('/api/transactions', transactionsRouter);
+app.route('/api/ai', aiRouter);
 
 // GET /api/me
 app.get('/api/me', async (c) => {
@@ -206,12 +210,6 @@ app.post('/api/me/consent', async (c) => {
   return c.body(null, 204);
 });
 
-import transactionsRouter from './routes/transactions';
-import { getSummary } from '@billi/db/repos/transactions';
-
-// Feature routes land here as they're built:
-app.route('/api/transactions', transactionsRouter);
-
 // GET /api/dashboard/summary
 app.get('/api/dashboard/summary', async (c) => {
   const userId = c.get('userId');
@@ -255,9 +253,6 @@ app.get('/api/dashboard/summary', async (c) => {
     const currentSummary = await getSummary(db, userId, from, to);
     const previousSummary = await getSummary(db, userId, prevFrom, prevTo);
     
-    // For categories, we would ideally do a GROUP BY query, but for simplicity
-    // and since getSummary doesn't do it, we'll fetch items or use a custom query.
-    // We'll use the existing getSummary function pattern and add a quick custom query for categories.
     const { transactions } = await import('@billi/db/schema');
     const { and, eq, gte, lte } = await import('drizzle-orm');
     

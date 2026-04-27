@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/api-client';
 
 export interface Transaction {
@@ -15,7 +15,7 @@ export function useTransactions(filters?: { from?: number; to?: number; category
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
       const queryParams = new URLSearchParams();
@@ -38,11 +38,11 @@ export function useTransactions(filters?: { from?: number; to?: number; category
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchTransactions();
-  }, [filters?.from, filters?.to, filters?.category, filters?.type]);
+  }, [fetchTransactions]);
 
   const createTransaction = async (values: {
     type: 'income' | 'expense';
@@ -65,5 +65,41 @@ export function useTransactions(filters?: { from?: number; to?: number; category
     return res.json();
   };
 
-  return { transactions, isLoading, error, createTransaction, refresh: fetchTransactions };
+  const bulkDelete = async (ids: string[]) => {
+    const res = await apiClient.post('/api/transactions/bulk-delete', {
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to delete transactions');
+    }
+
+    await fetchTransactions();
+    return res.json();
+  };
+
+  const bulkUpdateCategory = async (ids: string[], category: string) => {
+    const res = await apiClient.patch('/api/transactions/bulk-category', {
+      body: JSON.stringify({ ids, category }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to update category');
+    }
+
+    await fetchTransactions();
+    return res.json();
+  };
+
+  return { 
+    transactions, 
+    isLoading, 
+    error, 
+    createTransaction, 
+    bulkDelete,
+    bulkUpdateCategory,
+    refresh: fetchTransactions 
+  };
 }

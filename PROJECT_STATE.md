@@ -19,6 +19,8 @@
 | SPEC-20260426-004 | mastra-ai-foundation | 2026-04-26 | GO (100%) |
 | SPEC-20260426-005 | transaction-management-export | 2026-04-26 | GO (100%) |
 | SPEC-20260426-006 | financial-analytics-dashboard | 2026-04-26 | GO (100%) |
+| SPEC-20260426-007 | advanced-transaction-management | 2026-04-26 | GO (100%) |
+| SPEC-20260426-008 | billi-ai-memory-ux | 2026-04-26 | GO (100%) |
 
 ## Archived Specs
 
@@ -27,9 +29,9 @@
 
 ## Metrics
 
-- Total Specs: 6
+- Total Specs: 8
 - Active: 0
-- Completed: 6
+- Completed: 8
 - Archived: 0
 - Completion Rate: 100%
 
@@ -46,3 +48,10 @@
 | 2026-04-26 | Refined SPEC-20260426-005 | Added technical approach, test strategy, and implementation plan | SPEC-20260426-005 |
 | 2026-04-26 | Refined SPEC-20260426-006 | Defined technical approach and test strategy | SPEC-20260426-006 |
 | 2026-04-26 | Completed batch 2 | QA passed for AI, Export, and Analytics | N/A |
+| 2026-04-26 | Refactored Mastra Foundation | Real Mastra integration and toolset | SPEC-20260426-004 |
+| 2026-04-26 | Created batch 3 | Advanced Tx Management (007), AI Memory & UX (008) | N/A |
+| 2026-04-26 | Refined SPEC-007, generated tests | Transitioned to CODE stage | SPEC-20260426-007 |
+| 2026-04-26 | Refined SPEC-008, generated tests | Transitioned to TEST stage | SPEC-20260426-008 |
+| 2026-04-26 | Backend for SPEC-007 done | Logic and endpoints ready | SPEC-20260426-007 |
+| 2026-04-26 | Environment ready for SPEC-008 | dependencies installed, tests ready | SPEC-20260426-008 |
+| 2026-04-26 | Completed batch 3 | QA passed for Advanced Tx and AI Memory | N/A |

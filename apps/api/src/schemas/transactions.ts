@@ -25,3 +25,12 @@ export const updateTransactionSchema = newTransactionSchema.partial();
 export const transactionIdParamSchema = z.object({
   id: z.string().min(1),
 });
+
+export const bulkDeleteSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+});
+
+export const bulkCategoryUpdateSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+  category: z.string().min(1).max(32),
+});

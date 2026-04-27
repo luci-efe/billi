@@ -83,3 +83,4 @@ bun.lockb
 
 # Claude Code scheduler lock
 .claude/scheduled_tasks.lock
+.mastra

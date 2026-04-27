@@ -6,7 +6,10 @@ import {
   Sparkles,
   Paperclip,
   Mic,
-  ArrowRight
+  ArrowRight,
+  Loader2,
+  Trash2,
+  CheckCircle2
 } from "lucide-react";
 import { 
   Card, 
@@ -20,63 +23,60 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useChat } from "@/hooks/use-chat";
+import { toast } from "sonner";
 
 const suggestedQuestions = [
   "¿Cuánto gasté en comida este mes?",
   "¿Cómo puedo ahorrar más?",
-  "Explicame qué es el ISR",
-  "¿Cuáles son mis gastos más recurrentes?",
+  "Explícame qué es el ISR",
+  "Registra que gasté 200 pesos en gasolina",
 ];
 
 export default function Chat() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: "assistant",
-      content: "¡Hola! Soy Billi, tu asistente financiero. ¿En qué puedo ayudarte hoy? Puedo analizar tus gastos o resolver dudas sobre finanzas en México.",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }
-  ]);
+  const { messages, isLoading, sendMessage, clearChat } = useChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSend = () => {
-    if (!input.trim()) return;
-
-    const userMessage = {
-      id: messages.length + 1,
-      role: "user",
-      content: input,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages([...messages, userMessage]);
+    if (!input.trim() || isLoading) return;
+    sendMessage(input);
     setInput("");
+  };
 
-    // Simulate assistant response
-    setTimeout(() => {
-      const assistantMessage = {
-        id: messages.length + 2,
-        role: "assistant",
-        content: "Estoy analizando tu solicitud... Basado en tus datos, he notado que tu gasto en 'Comida' ha incrementado un 15% esta semana. ¿Te gustaría ver un desglose detallado?",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    }, 1000);
+  const handleClearChat = () => {
+    if (confirm("¿Estás seguro de que quieres borrar la conversación?")) {
+      clearChat();
+      toast.success("Conversación reiniciada");
+    }
   };
 
   return (
     <div className="flex h-[calc(100vh-160px)] flex-col gap-4 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
-        <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-          Chat Billi <Sparkles className="h-6 w-6 text-indigo-400" />
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+            Chat Billi <Sparkles className="h-6 w-6 text-indigo-400" />
+          </h2>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleClearChat}
+            className="text-slate-500 hover:text-rose-400 hover:bg-rose-500/10"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Borrar chat
+          </Button>
+        </div>
         <p className="text-slate-400">IA especializada en tus finanzas y contexto mexicano.</p>
       </div>
 
@@ -90,8 +90,11 @@ export default function Chat() {
               <div>
                 <CardTitle className="text-sm font-medium text-white">Billi AI</CardTitle>
                 <CardDescription className="text-[10px] text-emerald-400 flex items-center gap-1">
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  En línea
+                  <div className={cn(
+                    "h-1.5 w-1.5 rounded-full bg-emerald-400",
+                    isLoading ? "animate-pulse" : ""
+                  )} />
+                  {isLoading ? "Billi está pensando..." : "En línea"}
                 </CardDescription>
               </div>
             </div>
@@ -99,29 +102,44 @@ export default function Chat() {
           
           <ScrollArea className="flex-1 p-4" ref={scrollRef}>
             <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex max-w-[80%] flex-col gap-2 rounded-2xl p-4 text-sm",
-                    message.role === "assistant"
-                      ? "self-start bg-slate-800 text-slate-100 rounded-tl-none"
-                      : "self-end bg-indigo-600 text-white rounded-tr-none ml-auto"
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    {message.role === "assistant" ? (
-                      <Bot className="h-3 w-3 text-indigo-400" />
-                    ) : (
-                      <User className="h-3 w-3 text-indigo-200" />
+              {messages.map((message) => {
+                const isTransactionSuccess = message.role === 'assistant' && 
+                  (message.content.includes('éxito') || message.content.includes('registrada'));
+
+                return (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex max-w-[80%] flex-col gap-2 rounded-2xl p-4 text-sm",
+                      message.role === "assistant"
+                        ? "self-start bg-slate-800 text-slate-100 rounded-tl-none"
+                        : "self-end bg-indigo-600 text-white rounded-tr-none ml-auto",
+                      isTransactionSuccess ? "border border-emerald-500/30 bg-emerald-500/5" : ""
                     )}
-                    <span className="text-[10px] opacity-70 font-medium">
-                      {message.role === "assistant" ? "Billi" : "Tú"} • {message.timestamp}
-                    </span>
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      {message.role === "assistant" ? (
+                        <Bot className="h-3 w-3 text-indigo-400" />
+                      ) : (
+                        <User className="h-3 w-3 text-indigo-200" />
+                      )}
+                      <span className="text-[10px] opacity-70 font-medium">
+                        {message.role === "assistant" ? "Billi" : "Tú"} • {message.timestamp}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      {isTransactionSuccess && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />}
+                      <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    </div>
                   </div>
-                  <p className="leading-relaxed">{message.content}</p>
+                );
+              })}
+              {isLoading && (
+                <div className="flex self-start bg-slate-800 text-slate-100 rounded-2xl rounded-tl-none p-4 text-sm items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+                  <span className="text-xs text-slate-400">Billi está procesando...</span>
                 </div>
-              ))}
+              )}
             </div>
           </ScrollArea>
 
@@ -133,10 +151,11 @@ export default function Chat() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  disabled={isLoading}
                   className="bg-slate-950 border-slate-800 focus-visible:ring-indigo-500"
                 />
-                <Button onClick={handleSend} className="bg-indigo-600 hover:bg-indigo-500">
-                  <Send className="h-4 w-4" />
+                <Button onClick={handleSend} disabled={isLoading || !input.trim()} className="bg-indigo-600 hover:bg-indigo-500">
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
               <div className="flex items-center gap-2 text-[10px] text-slate-500">
@@ -159,8 +178,12 @@ export default function Chat() {
               {suggestedQuestions.map((q) => (
                 <button
                   key={q}
-                  onClick={() => setInput(q)}
-                  className="flex w-full items-center justify-between rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-left text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+                  disabled={isLoading}
+                  onClick={() => {
+                    setInput(q);
+                    sendMessage(q);
+                  }}
+                  className="flex w-full items-center justify-between rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-left text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 disabled:opacity-50"
                 >
                   {q}
                   <ArrowRight className="h-3 w-3" />
