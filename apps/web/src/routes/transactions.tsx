@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   Plus, 
   Search, 
   ArrowUpRight, 
   ArrowDownRight,
   MoreHorizontal,
-  Download
+  Download,
+  Filter
 } from "lucide-react";
 import { 
   Card, 
@@ -46,14 +47,33 @@ import { toast } from "sonner";
 import { useTransactions } from "@/hooks/use-transactions";
 
 export default function Transactions() {
-  const { transactions, isLoading, createTransaction } = useTransactions();
-  const [filter, setFilter] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  
+  // Convert date strings to unix timestamps for the API
+  const filtersParams = useMemo(() => {
+    return {
+      type: filterType,
+      category: filterCategory,
+      from: filterDateFrom ? Math.floor(new Date(filterDateFrom).getTime() / 1000) : undefined,
+      to: filterDateTo ? Math.floor(new Date(filterDateTo).getTime() / 1000) + 86399 : undefined, // Include end of day
+    };
+  }, [filterType, filterCategory, filterDateFrom, filterDateTo]);
+
+  const { transactions, isLoading, createTransaction } = useTransactions(filtersParams);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // We still do client-side search for 'note' text if needed, 
+  // but filtering is now mostly handled by the backend.
+  const [searchTerm, setSearchTerm] = useState("");
   const filteredTransactions = transactions.filter((tx) => {
-    if (filter === "all") return true;
-    return tx.type === filter;
+    if (searchTerm && !tx.note?.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    return true;
   });
 
   const formatCurrency = (cents: number) => {
@@ -65,6 +85,37 @@ export default function Transactions() {
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString('es-MX');
+  };
+
+  const handleExportCSV = () => {
+    if (!filteredTransactions.length) {
+      toast.info("No hay transacciones para exportar");
+      return;
+    }
+    
+    try {
+      const headers = ['Concepto', 'Categoría', 'Fecha', 'Tipo', 'Monto'];
+      const rows = filteredTransactions.map(tx => {
+        const date = new Date(tx.occurredAt * 1000).toISOString().split('T')[0];
+        const amount = (tx.amountCents / 100).toFixed(2);
+        return `"${tx.note || ''}","${tx.category}","${date}","${tx.type}","${amount}"`;
+      });
+      const csvContent = [headers.join(','), ...rows].join('\\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      link.setAttribute("href", url);
+      link.setAttribute("download", `billi_export_${timestamp}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Exportación completada");
+    } catch {
+      toast.error("Error al generar el archivo CSV");
+    }
   };
 
   const handleAddTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -105,9 +156,9 @@ export default function Transactions() {
           <p className="text-slate-400">Administra y revisa todos tus movimientos financieros.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300">
+          <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300" onClick={handleExportCSV}>
             <Download className="mr-2 h-4 w-4" />
-            Exportar
+            Exportar CSV
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger>
@@ -177,20 +228,73 @@ export default function Transactions() {
 
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-3">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <Tabs defaultValue="all" className="w-full md:w-[400px]" onValueChange={setFilter}>
-              <TabsList className="bg-slate-950 border border-slate-800">
-                <TabsTrigger value="all" className="data-[state=active]:bg-slate-800">Todos</TabsTrigger>
-                <TabsTrigger value="income" className="data-[state=active]:bg-slate-800">Ingresos</TabsTrigger>
-                <TabsTrigger value="expense" className="data-[state=active]:bg-slate-800">Egresos</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="relative w-full md:w-[300px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-              <Input
-                placeholder="Buscar movimientos..."
-                className="pl-9 bg-slate-950 border-slate-800"
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <Tabs defaultValue="all" className="w-full md:w-[400px]" onValueChange={setFilterType}>
+                <TabsList className="bg-slate-950 border border-slate-800">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-slate-800">Todos</TabsTrigger>
+                  <TabsTrigger value="income" className="data-[state=active]:bg-slate-800">Ingresos</TabsTrigger>
+                  <TabsTrigger value="expense" className="data-[state=active]:bg-slate-800">Egresos</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <div className="relative w-full md:w-[300px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                <Input
+                  placeholder="Buscar concepto..."
+                  className="pl-9 bg-slate-950 border-slate-800"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center gap-2 mr-4">
+                <Filter className="h-4 w-4 text-slate-400" />
+                <span className="text-sm text-slate-400 font-medium">Filtros:</span>
+              </div>
+              <Select value={filterCategory} onValueChange={(val) => setFilterCategory(val || "all")}>
+                <SelectTrigger className="w-[180px] bg-slate-950 border-slate-800 h-9">
+                  <SelectValue placeholder="Categoría" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  <SelectItem value="Comida">Comida</SelectItem>
+                  <SelectItem value="Transporte">Transporte</SelectItem>
+                  <SelectItem value="Salario">Salario</SelectItem>
+                  <SelectItem value="Renta">Renta</SelectItem>
+                  <SelectItem value="Entretenimiento">Entretenimiento</SelectItem>
+                  <SelectItem value="Otros">Otros</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input 
+                type="date" 
+                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm" 
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                title="Fecha inicio"
               />
+              <span className="text-slate-500">-</span>
+              <Input 
+                type="date" 
+                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm" 
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                title="Fecha fin"
+              />
+              {(filterCategory !== "all" || filterDateFrom || filterDateTo) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-9 text-slate-400 hover:text-white"
+                  onClick={() => {
+                    setFilterCategory("all");
+                    setFilterDateFrom("");
+                    setFilterDateTo("");
+                  }}
+                >
+                  Limpiar
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
