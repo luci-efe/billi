@@ -216,22 +216,86 @@ app.route('/api/transactions', transactionsRouter);
 app.get('/api/dashboard/summary', async (c) => {
   const userId = c.get('userId');
   const db = c.get('db');
+  const period = c.req.query('period') || 'month';
   
-  // Default to current month
   const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  
-  const from = Math.floor(firstDay.getTime() / 1000);
-  const to = Math.floor(lastDay.getTime() / 1000);
+  let from = 0;
+  const to = Math.floor(now.getTime() / 1000);
+  let prevFrom = 0;
+  let prevTo = 0;
+
+  if (period === 'day') {
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    from = Math.floor(startOfDay.getTime() / 1000);
+    prevFrom = from - 86400;
+    prevTo = from - 1;
+  } else if (period === 'week') {
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), diff);
+    from = Math.floor(startOfWeek.getTime() / 1000);
+    prevFrom = from - 7 * 86400;
+    prevTo = from - 1;
+  } else if (period === 'year') {
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    from = Math.floor(startOfYear.getTime() / 1000);
+    const startOfPrevYear = new Date(now.getFullYear() - 1, 0, 1);
+    prevFrom = Math.floor(startOfPrevYear.getTime() / 1000);
+    prevTo = from - 1;
+  } else {
+    // default: month
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    from = Math.floor(firstDay.getTime() / 1000);
+    const firstDayPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    prevFrom = Math.floor(firstDayPrevMonth.getTime() / 1000);
+    prevTo = from - 1;
+  }
 
   try {
-    const summary = await getSummary(db, userId, from, to);
-    return c.json(summary);
+    const currentSummary = await getSummary(db, userId, from, to);
+    const previousSummary = await getSummary(db, userId, prevFrom, prevTo);
+    
+    // For categories, we would ideally do a GROUP BY query, but for simplicity
+    // and since getSummary doesn't do it, we'll fetch items or use a custom query.
+    // We'll use the existing getSummary function pattern and add a quick custom query for categories.
+    const { transactions } = await import('@billi/db/schema');
+    const { and, eq, gte, lte } = await import('drizzle-orm');
+    
+    const items = await db.select({
+      category: transactions.category,
+      amountCents: transactions.amountCents,
+      type: transactions.type
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.ownerId, userId),
+        eq(transactions.type, 'expense'),
+        gte(transactions.occurredAt, from),
+        lte(transactions.occurredAt, to)
+      )
+    );
+    
+    const categoryTotals: Record<string, number> = {};
+    for (const item of items) {
+      categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amountCents;
+    }
+    
+    const categories = Object.entries(categoryTotals).map(([name, value]) => ({ name, value }));
+
+    return c.json({
+      current: currentSummary,
+      previous: previousSummary,
+      categories
+    });
   } catch (err) {
     const isTest = c.env.VITEST === 'true';
     if (isTest) {
-      return c.json({ income: 0, expense: 0, balance: 0 });
+      return c.json({ 
+        current: { income: 0, expense: 0, balance: 0 },
+        previous: { income: 0, expense: 0, balance: 0 },
+        categories: []
+      });
     }
     throw err;
   }

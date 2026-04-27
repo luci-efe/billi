@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -38,32 +39,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "@/hooks/use-dashboard";
 
-const barData = [
-  { name: "Lun", ingresos: 1200, egresos: 800 },
-  { name: "Mar", ingresos: 1500, egresos: 1100 },
-  { name: "Mie", ingresos: 900, egresos: 1200 },
-  { name: "Jue", ingresos: 2000, egresos: 1500 },
-  { name: "Vie", ingresos: 1800, egresos: 900 },
-  { name: "Sab", ingresos: 2500, egresos: 1800 },
-  { name: "Dom", ingresos: 3000, egresos: 2100 },
-];
-
-const pieData = [
-  { name: "Comida", value: 4500, color: "#818cf8" },
-  { name: "Transporte", value: 2100, color: "#6366f1" },
-  { name: "Renta", value: 12000, color: "#4f46e5" },
-  { name: "Entretenimiento", value: 1800, color: "#4338ca" },
-  { name: "Otros", value: 1200, color: "#3730a3" },
-];
+const CHART_COLORS = ["#818cf8", "#6366f1", "#4f46e5", "#4338ca", "#3730a3", "#312e81"];
 
 export default function Dashboard() {
-  const { summary, recentTransactions, isLoading } = useDashboard();
+  const [period, setPeriod] = useState("month");
+  const { data, recentTransactions, isLoading } = useDashboard(period);
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency: 'MXN',
-    }).format(cents / 100);
+    }).format(Math.abs(cents) / 100);
   };
 
   const formatDate = (timestamp: number) => {
@@ -73,9 +59,34 @@ export default function Dashboard() {
     });
   };
 
-  if (isLoading) {
+  const calculateTrend = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? "New activity" : "0%";
+    const change = ((current - previous) / previous) * 100;
+    const sign = change > 0 ? "+" : "";
+    return `${sign}${change.toFixed(1)}%`;
+  };
+
+  const pieData = data?.categories.map((c, i) => ({
+    name: c.name,
+    value: c.value / 100, // For charts, use proper numbers
+    color: CHART_COLORS[i % CHART_COLORS.length],
+  })) || [];
+
+  // Very simple mocked bar data based on totals just for visualization
+  // Real implementation would group by day
+  const barData = [
+    { name: "Period", ingresos: (data?.current.income || 0) / 100, egresos: (data?.current.expense || 0) / 100 },
+  ];
+
+  if (isLoading && !data) {
     return <div className="flex items-center justify-center h-full text-slate-400">Cargando dashboard...</div>;
   }
+
+  const incomeTrend = calculateTrend(data?.current.income || 0, data?.previous.income || 0);
+  const isIncomeUp = (data?.current.income || 0) >= (data?.previous.income || 0);
+  
+  const expenseTrend = calculateTrend(data?.current.expense || 0, data?.previous.expense || 0);
+  const isExpenseUp = (data?.current.expense || 0) >= (data?.previous.expense || 0);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -85,7 +96,7 @@ export default function Dashboard() {
           <p className="text-slate-400">Bienvenido de vuelta, aquí está tu estado actual.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Select defaultValue="week">
+          <Select value={period} onValueChange={(val) => setPeriod(val || "month")}>
             <SelectTrigger className="w-[180px] bg-slate-900 border-slate-800 text-slate-300">
               <CalendarDays className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Periodo" />
@@ -111,12 +122,14 @@ export default function Dashboard() {
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">Saldo Neto</CardDescription>
-            <CardTitle className="text-4xl font-bold text-white">{formatCurrency(summary?.balance || 0)}</CardTitle>
+            <CardTitle className="text-4xl font-bold text-white">
+              {(data?.current.balance || 0) < 0 ? "-" : ""}{formatCurrency(data?.current.balance || 0)}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center text-emerald-400 text-xs font-medium">
+            <div className="flex items-center text-indigo-400 text-xs font-medium">
               <ArrowUpRight className="mr-1 h-3 w-3" />
-              Estado actual del mes
+              Estado actual
             </div>
           </CardContent>
         </Card>
@@ -124,12 +137,15 @@ export default function Dashboard() {
         <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">Ingresos Totales</CardDescription>
-            <CardTitle className="text-3xl font-bold text-emerald-400">{formatCurrency(summary?.income || 0)}</CardTitle>
+            <CardTitle className="text-3xl font-bold text-emerald-400">{formatCurrency(data?.current.income || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center text-slate-500 text-xs">
-              <TrendingUp className="mr-1 h-3 w-3" />
-              Acumulado este periodo
+            <div className={cn(
+              "flex items-center text-xs",
+              isIncomeUp ? "text-emerald-500" : "text-rose-500"
+            )}>
+              {isIncomeUp ? <TrendingUp className="mr-1 h-3 w-3" /> : <TrendingDown className="mr-1 h-3 w-3" />}
+              {incomeTrend} vs periodo anterior
             </div>
           </CardContent>
         </Card>
@@ -137,12 +153,15 @@ export default function Dashboard() {
         <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">Egresos Totales</CardDescription>
-            <CardTitle className="text-3xl font-bold text-rose-400">{formatCurrency(summary?.expense || 0)}</CardTitle>
+            <CardTitle className="text-3xl font-bold text-rose-400">{formatCurrency(data?.current.expense || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center text-slate-500 text-xs">
-              <TrendingDown className="mr-1 h-3 w-3" />
-              Acumulado este periodo
+            <div className={cn(
+              "flex items-center text-xs",
+              isExpenseUp ? "text-rose-500" : "text-emerald-500"
+            )}>
+              {isExpenseUp ? <TrendingUp className="mr-1 h-3 w-3" /> : <TrendingDown className="mr-1 h-3 w-3" />}
+              {expenseTrend} vs periodo anterior
             </div>
           </CardContent>
         </Card>
@@ -153,7 +172,7 @@ export default function Dashboard() {
         <Card className="col-span-4 bg-slate-900 border-slate-800">
           <CardHeader>
             <CardTitle className="text-white">Flujo de Efectivo</CardTitle>
-            <CardDescription className="text-slate-400">Ingresos vs Egresos por día</CardDescription>
+            <CardDescription className="text-slate-400">Ingresos vs Egresos del periodo</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] w-full pt-4">
             <ResponsiveContainer width="100%" height="100%">
@@ -174,6 +193,7 @@ export default function Dashboard() {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '12px' }}
+                  formatter={(value: unknown) => [`$${Number(value).toFixed(2)}`, '']}
                 />
                 <Bar dataKey="ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="egresos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
@@ -188,35 +208,42 @@ export default function Dashboard() {
             <CardDescription className="text-slate-400">Tus mayores gastos este periodo</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+            {pieData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
+                      itemStyle={{ fontSize: '12px' }}
+                      formatter={(value: unknown) => [`$${Number(value).toFixed(2)}`, 'Monto']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="grid grid-cols-2 gap-4 w-full mt-4 px-4 overflow-y-auto max-h-24 scrollbar-thin">
+                  {pieData.map((item) => (
+                    <div key={item.name} className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-[10px] text-slate-400 truncate" title={item.name}>{item.name}</span>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-                  itemStyle={{ fontSize: '12px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="grid grid-cols-2 gap-4 w-full mt-4 px-4">
-              {pieData.map((item) => (
-                <div key={item.name} className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-[10px] text-slate-400 truncate">{item.name}</span>
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <div className="text-slate-500 text-sm">No spending data available for this period</div>
+            )}
           </CardContent>
         </Card>
       </div>
