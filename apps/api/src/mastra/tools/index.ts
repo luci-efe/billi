@@ -22,12 +22,12 @@ export const getTransactionsTool = createTool({
     }
 
     const result = await repo.listTransactions(db, ownerId, {
-      type,
-      category,
-      from,
-      to,
-      limit,
-    });
+      type: type ?? undefined,
+      category: category ?? undefined,
+      from: from ?? undefined,
+      to: to ?? undefined,
+      limit: limit ?? undefined,
+    } as any);
 
     return { transactions: result.items };
   },
@@ -75,11 +75,14 @@ export const addTransactionTool = createTool({
     const id = ulid();
 
     await repo.createTransaction(db, ownerId, {
-      ...input,
       id,
+      type: input.type,
+      amountCents: input.amountCents,
+      category: input.category,
+      note: input.note ?? null,
       occurredAt: input.occurredAt ?? Math.floor(Date.now() / 1000),
       source: 'chat',
-    });
+    } as any);
 
     return { success: true, id, message: 'Transacción registrada con éxito' };
   },

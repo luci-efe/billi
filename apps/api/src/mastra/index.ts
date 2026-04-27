@@ -5,10 +5,9 @@ import type { Env } from '../env';
 
 export function getMastra(env: Env) {
   const storage = new LibSQLStore({
-    config: {
-      url: env.TURSO_DATABASE_URL,
-      authToken: env.TURSO_AUTH_TOKEN,
-    },
+    id: 'billi-storage',
+    url: env.TURSO_DATABASE_URL,
+    authToken: env.TURSO_AUTH_TOKEN,
   });
 
   return new Mastra({

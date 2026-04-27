@@ -21,6 +21,7 @@
     "@libsql/client": "^0.14.0",
     "@mastra/core": "^1.28.0",
     "@mastra/libsql": "^1.9.0",
+    "@mastra/memory": "^1.17.1",
     "ai": "^6.0.168",
     "drizzle-orm": "0.38.4",
     "hono": "^4.6.0",

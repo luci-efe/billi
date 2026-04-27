@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
-  Plus, 
+  Plus,
   Search, 
   ArrowUpRight, 
   ArrowDownRight,
@@ -437,7 +437,9 @@ export default function Transactions() {
             </div>
             
             <div className="flex items-center gap-2">
-              <Select onValueChange={handleBulkCategoryUpdate}>
+              <Select onValueChange={(val: string | null) => {
+                if (val) handleBulkCategoryUpdate(val);
+              }}>
                 <SelectTrigger className="h-9 w-[180px] bg-slate-800 border-slate-700 text-xs">
                   <Tag className="mr-2 h-3.5 w-3.5 text-slate-400" />
                   <SelectValue placeholder="Cambiar categoría" />

@@ -56,8 +56,7 @@ app.use('/api/*', async (c, next) => {
           transactions: { findMany: async () => [] },
         },
       };
-      // @ts-expect-error - Mock DB for tests
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // @ts-ignore
       c.set('db', mockDb as any);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       c.set('userRepo', new UserRepository(mockDb as any));

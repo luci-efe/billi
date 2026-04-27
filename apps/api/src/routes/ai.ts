@@ -35,15 +35,27 @@ router.post('/chat', async (c) => {
     const mastra = getMastra(c.env);
     const agent = mastra.getAgent('billiAgent');
     
-    const result = await agent.generate(message, {
+    // For Mastra v1, memory property expects specific structure or just a threadId string
+    const generateOptions: any = {
       requestContext,
-      threadId,
-      resourceId: userId,
-    });
+      memory: {
+        resource: userId,
+      },
+    };
+
+    if (threadId) {
+      generateOptions.memory.thread = threadId;
+    }
+
+    const result = await agent.generate(message, generateOptions);
+
+    // In Mastra v1, threadId might be in different places depending on result shape
+    // Extracting it safely
+    const responseThreadId = threadId || (result as any).threadId || (result as any).memory?.threadId;
 
     return c.json({ 
       text: result.text,
-      threadId: result.threadId,
+      threadId: responseThreadId,
     });
   } catch (err) {
     console.error('Mastra Error:', err);

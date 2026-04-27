@@ -1,5 +1,5 @@
 import { Agent } from '@mastra/core/agent';
-import { Memory } from '@mastra/core/memory';
+import { Memory } from '@mastra/memory';
 import { createOpenAI } from '@ai-sdk/openai';
 import { getTransactionsTool, getFinancialSummaryTool, addTransactionTool } from '../tools';
 
