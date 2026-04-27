@@ -5,7 +5,9 @@ import {
   newTransactionSchema, 
   listFilterSchema, 
   updateTransactionSchema, 
-  transactionIdParamSchema 
+  transactionIdParamSchema,
+  bulkDeleteSchema,
+  bulkCategoryUpdateSchema
 } from "../schemas/transactions";
 import { 
   createTransaction, 
@@ -13,6 +15,8 @@ import {
   listTransactions, 
   updateTransaction, 
   deleteTransaction,
+  deleteTransactions,
+  updateTransactionsCategory,
   type ListFilter,
   type NewTransaction
 } from "@billi/db/repos/transactions";
@@ -122,6 +126,34 @@ router.get("/export", zValidator("query", listFilterSchema), async (c) => {
     });
   } catch (err) {
     return c.json({ error: "export_failed", message: (err as Error).message }, 500);
+  }
+});
+
+// POST /api/transactions/bulk-delete
+router.post("/bulk-delete", zValidator("json", bulkDeleteSchema), async (c) => {
+  const userId = c.get("userId");
+  const db = c.get("db");
+  const { ids } = c.req.valid("json");
+
+  try {
+    const count = await deleteTransactions(db, ids, userId);
+    return c.json({ count });
+  } catch (err) {
+    return c.json({ error: "bulk_delete_failed", message: (err as Error).message }, 500);
+  }
+});
+
+// PATCH /api/transactions/bulk-category
+router.patch("/bulk-category", zValidator("json", bulkCategoryUpdateSchema), async (c) => {
+  const userId = c.get("userId");
+  const db = c.get("db");
+  const { ids, category } = c.req.valid("json");
+
+  try {
+    const count = await updateTransactionsCategory(db, ids, userId, category);
+    return c.json({ count });
+  } catch (err) {
+    return c.json({ error: "bulk_category_update_failed", message: (err as Error).message }, 500);
   }
 });
 

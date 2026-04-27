@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, lt, or } from "drizzle-orm";
+import { eq, and, gte, lte, desc, lt, or, inArray } from "drizzle-orm";
 import { transactions, type TransactionRow } from "../schema/transactions";
 import type { DbClient } from "../client";
 
@@ -229,4 +229,38 @@ export async function getSummary(
     expense,
     balance: income - expense,
   };
+}
+
+export async function deleteTransactions(
+  db: DbClient,
+  ids: string[],
+  ownerId: string
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  
+  const result = await db
+    .delete(transactions)
+    .where(and(inArray(transactions.id, ids), eq(transactions.ownerId, ownerId)))
+    .returning({ id: transactions.id });
+  
+  return result.length;
+}
+
+export async function updateTransactionsCategory(
+  db: DbClient,
+  ids: string[],
+  ownerId: string,
+  category: string
+): Promise<number> {
+  if (ids.length === 0) return 0;
+
+  const now = Math.floor(Date.now() / 1000);
+
+  const result = await db
+    .update(transactions)
+    .set({ category, updatedAt: now })
+    .where(and(inArray(transactions.id, ids), eq(transactions.ownerId, ownerId)))
+    .returning({ id: transactions.id });
+
+  return result.length;
 }

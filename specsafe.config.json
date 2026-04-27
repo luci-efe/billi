@@ -6,7 +6,7 @@
     "gemini"
   ],
   "testFramework": "vitest",
-  "testCommand": "pnpm test",
-  "coverageCommand": "pnpm test --coverage",
+  "testCommand": "bun test",
+  "coverageCommand": "bun test --coverage",
   "specsafeVersion": "2.2.3"
 }

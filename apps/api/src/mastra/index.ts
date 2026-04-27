@@ -1,0 +1,18 @@
+import { Mastra } from '@mastra/core';
+import { LibSQLStore } from '@mastra/libsql';
+import { billiAgent } from './agents';
+import type { Env } from '../env';
+
+export function getMastra(env: Env) {
+  const storage = new LibSQLStore({
+    config: {
+      url: env.TURSO_DATABASE_URL,
+      authToken: env.TURSO_AUTH_TOKEN,
+    },
+  });
+
+  return new Mastra({
+    storage,
+    agents: { billiAgent },
+  });
+}

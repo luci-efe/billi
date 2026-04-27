@@ -6,7 +6,9 @@ import {
   ArrowDownRight,
   MoreHorizontal,
   Download,
-  Filter
+  Filter,
+  Trash2,
+  Tag
 } from "lucide-react";
 import { 
   Card, 
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -62,12 +65,23 @@ export default function Transactions() {
     };
   }, [filterType, filterCategory, filterDateFrom, filterDateTo]);
 
-  const { transactions, isLoading, createTransaction } = useTransactions(filtersParams);
+  const { 
+    transactions, 
+    isLoading, 
+    createTransaction, 
+    bulkDelete, 
+    bulkUpdateCategory 
+  } = useTransactions(filtersParams);
+  
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // We still do client-side search for 'note' text if needed, 
-  // but filtering is now mostly handled by the backend.
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [filtersParams]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const filteredTransactions = transactions.filter((tx) => {
     if (searchTerm && !tx.note?.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -75,6 +89,47 @@ export default function Transactions() {
     }
     return true;
   });
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredTransactions.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredTransactions.map(tx => tx.id));
+    }
+  };
+
+  const toggleSelectRow = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    
+    const confirmed = window.confirm(`¿Estás seguro de eliminar ${selectedIds.length} transacciones?`);
+    if (!confirmed) return;
+
+    try {
+      await bulkDelete(selectedIds);
+      setSelectedIds([]);
+      toast.success(`${selectedIds.length} transacciones eliminadas`);
+    } catch {
+      toast.error("Error al eliminar transacciones");
+    }
+  };
+
+  const handleBulkCategoryUpdate = async (category: string) => {
+    if (!selectedIds.length) return;
+
+    try {
+      await bulkUpdateCategory(selectedIds, category);
+      setSelectedIds([]);
+      toast.success(`${selectedIds.length} transacciones actualizadas`);
+    } catch {
+      toast.error("Error al actualizar categorías");
+    }
+  };
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -303,6 +358,13 @@ export default function Transactions() {
             <Table>
               <TableHeader className="bg-slate-950/50">
                 <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="w-[40px] px-4">
+                    <Checkbox 
+                      checked={selectedIds.length === filteredTransactions.length && filteredTransactions.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                      className="border-slate-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                    />
+                  </TableHead>
                   <TableHead className="text-slate-400">Concepto</TableHead>
                   <TableHead className="text-slate-400">Categoría</TableHead>
                   <TableHead className="text-slate-400">Fecha</TableHead>
@@ -313,6 +375,13 @@ export default function Transactions() {
               <TableBody>
                 {filteredTransactions.map((tx) => (
                   <TableRow key={tx.id} className="border-slate-800 hover:bg-slate-800/30">
+                    <TableCell className="px-4">
+                      <Checkbox 
+                        checked={selectedIds.includes(tx.id)}
+                        onCheckedChange={() => toggleSelectRow(tx.id)}
+                        className="border-slate-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                      />
+                    </TableCell>
                     <TableCell className="font-medium text-white">
                       <div className="flex items-center gap-3">
                         <div className={cn(
@@ -345,7 +414,7 @@ export default function Transactions() {
                 ))}
                 {filteredTransactions.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                    <TableCell colSpan={6} className="h-24 text-center text-slate-500">
                       No se encontraron movimientos.
                     </TableCell>
                   </TableRow>
@@ -355,6 +424,56 @@ export default function Transactions() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6">
+            <div className="flex items-center gap-2 border-r border-slate-700 pr-6">
+              <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {selectedIds.length}
+              </span>
+              <span className="text-sm text-slate-300 font-medium">Seleccionados</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Select onValueChange={handleBulkCategoryUpdate}>
+                <SelectTrigger className="h-9 w-[180px] bg-slate-800 border-slate-700 text-xs">
+                  <Tag className="mr-2 h-3.5 w-3.5 text-slate-400" />
+                  <SelectValue placeholder="Cambiar categoría" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                  <SelectItem value="Comida">Comida</SelectItem>
+                  <SelectItem value="Transporte">Transporte</SelectItem>
+                  <SelectItem value="Salario">Salario</SelectItem>
+                  <SelectItem value="Renta">Renta</SelectItem>
+                  <SelectItem value="Entretenimiento">Entretenimiento</SelectItem>
+                  <SelectItem value="Otros">Otros</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="h-9 bg-rose-600 hover:bg-rose-500"
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                Eliminar
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-9 text-slate-400 hover:text-white"
+                onClick={() => setSelectedIds([])}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
