@@ -63,6 +63,8 @@ export const addTransactionTool = createTool({
     category: z.string(),
     note: z.string().optional(),
     occurredAt: z.number().optional().describe('Unix timestamp del movimiento, por defecto ahora'),
+    source: z.enum(['form', 'text', 'voice', 'image', 'chat']).optional().default('chat'),
+    sourceRef: z.string().optional(),
   }),
   execute: async (input, { requestContext }) => {
     const db = requestContext?.get('db') as DB;
@@ -82,7 +84,8 @@ export const addTransactionTool = createTool({
       category: input.category,
       note: input.note ?? null,
       occurredAt: input.occurredAt ?? Math.floor(Date.now() / 1000),
-      source: 'chat',
+      source: input.source,
+      sourceRef: input.sourceRef ?? null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 

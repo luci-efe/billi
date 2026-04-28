@@ -1,5 +1,5 @@
 export * from './users';
 export * from './transactions';
 export * from './categories';
-// Future additions:
-//   export * from './rag';            // BIL-13
+export * from './rag';
+export * from './documents';

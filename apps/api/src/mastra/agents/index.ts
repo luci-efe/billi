@@ -36,7 +36,7 @@ export const billiAgent = new Agent({
       baseURL: 'https://openrouter.ai/api/v1',
     });
 
-    return openrouter('anthropic/claude-3.5-sonnet');
+    return openrouter('inception/mercury-2');
   },
   tools: {
     getTransactions: getTransactionsTool,

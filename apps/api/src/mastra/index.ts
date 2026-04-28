@@ -1,6 +1,8 @@
 import { Mastra } from '@mastra/core';
 import { LibSQLStore } from '@mastra/libsql';
 import { billiAgent } from './agents';
+import { chatbotWorkflow } from './workflows/chatbot';
+import { captureWorkflow } from './workflows/capture';
 import type { Env } from '../env';
 
 export function getMastra(env: Env) {
@@ -13,6 +15,7 @@ export function getMastra(env: Env) {
   return new Mastra({
     storage,
     agents: { billiAgent },
+    workflows: { chatbotWorkflow, captureWorkflow },
   });
 }
 
@@ -24,4 +27,5 @@ export const mastra = new Mastra({
     ...(process.env.TURSO_AUTH_TOKEN ? { authToken: process.env.TURSO_AUTH_TOKEN } : {}),
   }),
   agents: { billiAgent },
+  workflows: { chatbotWorkflow, captureWorkflow },
 });
