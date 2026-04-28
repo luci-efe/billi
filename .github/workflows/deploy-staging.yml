@@ -6,10 +6,10 @@
 #   Secrets (Settings -> Secrets and variables -> Actions -> New repository secret):
 #     CF_API_TOKEN   -- Cloudflare API token (scopes: Workers Scripts Edit,
 #                       Cloudflare Pages Edit, Account Settings Read)
-#     CF_ACCOUNT_ID  -- 4105f6b01897184bf93014d65f1a60f7
+#     CF_ACCOUNT_ID  -- 48f381bf59212dbd98d2b424ba4b9a04
 #
 #   Variables (Settings -> Secrets and variables -> Actions -> Variables):
-#     STAGING_API_BASE_URL -- https://billi-api-staging.lfernando-rramos.workers.dev
+#     STAGING_API_BASE_URL -- https://billi-api-staging.eduardo-lalo1999.workers.dev
 #                             (baked into the SPA bundle at Vite build time).
 #
 # See docs/ops/cloudflare-setup.md for the full operator runbook.
@@ -50,8 +50,8 @@ jobs:
       - name: Post Worker URL to summary
         run: |
           echo "## Deployed to" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **API (Worker):** https://billi-api-staging.lfernando-rramos.workers.dev" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Health check:** https://billi-api-staging.lfernando-rramos.workers.dev/health" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **API (Worker):** https://billi-api-staging.eduardo-lalo1999.workers.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Health check:** https://billi-api-staging.eduardo-lalo1999.workers.dev/health" >> "$GITHUB_STEP_SUMMARY"
 
   deploy-web:
     name: Deploy SPA (staging)
@@ -78,7 +78,7 @@ jobs:
       - name: Post Pages URL to summary
         run: |
           echo "## Deployed to" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Web (Pages, production-branch=dev):** https://billi-web-staging.pages.dev" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Branch alias:** https://dev.billi-web-staging.pages.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Web (Pages, production-branch=dev):** https://billi-web-staging-6pj.pages.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Branch alias:** https://dev.billi-web-staging-6pj.pages.dev" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "> Per-commit preview URL is also in the Wrangler deploy output above." >> "$GITHUB_STEP_SUMMARY"

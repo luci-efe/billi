@@ -3,10 +3,15 @@
 This document covers every one-time setup step an operator must complete before
 the GitHub Actions staging deploy workflow can run successfully.
 
-**Account:** personal Cloudflare account, email `lfernando.rramos@gmail.com`
-**Account ID:** `4105f6b01897184bf93014d65f1a60f7`
-(This value is not a secret, but it is stored as the `CF_ACCOUNT_ID` GitHub
-Actions secret for workflow symmetry.)
+**Account:** Agentic Engineering organization Cloudflare account
+**Account ID:** `48f381bf59212dbd98d2b424ba4b9a04`
+**Login email:** `lfernando.rramos@gmail.com` (operator user; the account is
+owned by the Agentic Engineering organization, which already has Workers
+Paid active — reusing it avoids a second $5/mo subscription on a personal
+account and gives Billi the 10 MiB Worker bundle ceiling needed for the
+RAG/capture/documents code paths.)
+(The account ID is not a secret, but it is stored as the `CF_ACCOUNT_ID`
+GitHub Actions secret for workflow symmetry.)
 
 ---
 
@@ -16,9 +21,11 @@ Actions secret for workflow symmetry.)
 wrangler whoami
 ```
 
-Expected output includes `Account ID: 4105f6b01897184bf93014d65f1a60f7`.
-If you see a different account, run `wrangler logout && wrangler login` to
-re-authenticate against `lfernando.rramos@gmail.com`.
+Expected output includes `Account ID: 48f381bf59212dbd98d2b424ba4b9a04`
+(account name `Agentic Engineering`). If you only see your personal account,
+you have not been invited to the org; ask an org admin to add you. If you
+see neither, run `wrangler logout && wrangler login` to re-authenticate as
+`lfernando.rramos@gmail.com`.
 
 ---
 
@@ -38,8 +45,10 @@ Click **Create Token** → **Create Custom Token**.
 | Account         | Workers KV Storage        | Edit       |
 | Account         | Account Settings          | Read       |
 
-**Account resources:** Include → select *your personal account only*
-(`lfernando.rramos@gmail.com`). Do NOT select "All accounts".
+**Account resources:** Include → select *the Agentic Engineering account only*
+(`48f381bf59212dbd98d2b424ba4b9a04`). Do NOT select "All accounts" and do
+NOT include the personal account — a leaked token must not reach unrelated
+resources.
 
 **Zone resources:** Leave at the default ("Include — All zones") OR set to
 "None". Staging and production (when it goes live) both use
@@ -65,7 +74,7 @@ Navigate to: **Settings → Secrets and variables → Actions → New repository
 | Secret name    | Value                                    | Notes                                  |
 |----------------|------------------------------------------|----------------------------------------|
 | `CF_API_TOKEN` | (the token you just created)             | Treat as a password; never log it.     |
-| `CF_ACCOUNT_ID`| `4105f6b01897184bf93014d65f1a60f7`       | Not sensitive, stored here for symmetry.|
+| `CF_ACCOUNT_ID`| `48f381bf59212dbd98d2b424ba4b9a04`       | Not sensitive, stored here for symmetry.|
 | `STAGING_CLERK_PUBLISHABLE_KEY` | `pk_test_...`           | Required for staging SPA build.        |
 
 ---
@@ -76,11 +85,11 @@ The SPA build needs to know the Worker's staging URL. Set once per repo:
 
 | Variable name                  | Value                                                          |
 |--------------------------------|----------------------------------------------------------------|
-| `STAGING_API_BASE_URL`         | `https://billi-api-staging.lfernando-rramos.workers.dev`       |
+| `STAGING_API_BASE_URL`         | `https://billi-api-staging.eduardo-lalo1999.workers.dev`       |
 
 Set via: **Settings → Secrets and variables → Actions → Variables → New repository variable** (or `gh variable set STAGING_API_BASE_URL --body='<url>' --repo luci-efe/billi`).
 
-The subdomain `lfernando-rramos` is the workers.dev subdomain bound to the personal Cloudflare account `4105...`. It does not change between deployments. Until this variable is set, the SPA builds with an empty `VITE_API_BASE_URL`, which is safe for a first-boot smoke test but means every `/api/*` fetch from the browser 404s.
+The subdomain `eduardo-lalo1999` is the workers.dev subdomain bound to the Agentic Engineering Cloudflare account `48f381...`. It does not change between deployments. Until this variable is set, the SPA builds with an empty `VITE_API_BASE_URL`, which is safe for a first-boot smoke test but means every `/api/*` fetch from the browser 404s.
 
 ---
 
@@ -97,12 +106,13 @@ This registers the Pages project under your account. `deploy-web` uses
 deploy.
 
 **Why `--production-branch=dev`, not `main`?** Cloudflare Pages reserves
-the bare project URL (`billi-web-staging.pages.dev`) for the project's
-configured production branch. Since this project is the *staging* project
-and we deploy to `dev`, the production branch of the staging project is
-`dev`. Future production deployments will live in a **separate** Pages
-project (`billi-web-production`) whose own production branch will be
-`main` — same naming convention, different concern.
+the bare project URL (currently `billi-web-staging-6pj.pages.dev` — Cloudflare
+appends a 3-character random suffix per project to prevent enumeration)
+for the project's configured production branch. Since this project is the
+*staging* project and we deploy to `dev`, the production branch of the
+staging project is `dev`. Future production deployments will live in a
+**separate** Pages project (`billi-web-production`) whose own production
+branch will be `main` — same naming convention, different concern.
 
 If a Pages project was already created with `production-branch=main`, flip
 it in the dashboard: **Workers & Pages → billi-web-staging → Settings →
@@ -207,18 +217,18 @@ After the first successful workflow run:
 
 **Worker URL:**
 ```
-https://billi-api-staging.lfernando-rramos.workers.dev
+https://billi-api-staging.eduardo-lalo1999.workers.dev
 ```
 Health check: `/health` returns `{"ok":true,"service":"billi-api"}`.
 
 **SPA (Pages) URLs:**
-- `https://billi-web-staging.pages.dev` — canonical staging URL (serves
+- `https://billi-web-staging-6pj.pages.dev` — canonical staging URL (serves
   whatever is deployed from `dev`, since `dev` is the project's production
   branch).
-- `https://dev.billi-web-staging.pages.dev` — branch alias (same deployment,
+- `https://dev.billi-web-staging-6pj.pages.dev` — branch alias (same deployment,
   explicit branch-scoped URL; useful while Cloudflare propagates the
   production-pointer with a brief delay after a deploy).
-- `https://<commit-sha>.billi-web-staging.pages.dev` — per-commit preview.
+- `https://<commit-sha>.billi-web-staging-6pj.pages.dev` — per-commit preview.
 
 Both URLs appear in the **GitHub Actions job summary** of each deployment run
 (click the run → expand the job summary).

@@ -46,7 +46,7 @@ Rationale for **Pages for SPA over Workers Static Assets**: Pages is the shortes
   - Both jobs post their deployed URL to `$GITHUB_STEP_SUMMARY`.
 - `.github/workflows/deploy-production.yml` — mirror of staging, triggered on push to `main`, guarded by `if: github.ref == 'refs/heads/main'`, with a leading `notice:` step that logs "production not yet wired — add domain binding and flip this guard when ready".
 - `docs/ops/cloudflare-setup.md` — operator runbook covering:
-  - Account linking (`wrangler whoami` → confirm Account ID `4105f6b01897184bf93014d65f1a60f7`).
+  - Account linking (`wrangler whoami` → confirm Account ID `48f381bf59212dbd98d2b424ba4b9a04`, account name `Agentic Engineering`).
   - CF API token creation (exact scopes + dashboard URL).
   - GitHub secret names and where to paste each value.
   - One-time creation of the Pages project (`wrangler pages project create billi-web-staging --production-branch=main`).
@@ -68,7 +68,7 @@ Rationale for **Pages for SPA over Workers Static Assets**: Pages is the shortes
 ### AC-1 — Push to `dev` triggers staging deploy
 > Given a push lands on the `dev` branch,
 > When `deploy-staging.yml` receives the event,
-> Then both `deploy-api` and `deploy-web` jobs run in parallel (or sequentially if a dependency is declared) and both succeed against Cloudflare Account `4105f6b01897184bf93014d65f1a60f7`.
+> Then both `deploy-api` and `deploy-web` jobs run in parallel (or sequentially if a dependency is declared) and both succeed against Cloudflare Account `48f381bf59212dbd98d2b424ba4b9a04` (Agentic Engineering org).
 
 ### AC-2 — Worker reachable after deploy
 > Given `deploy-api` completes,
@@ -76,7 +76,7 @@ Rationale for **Pages for SPA over Workers Static Assets**: Pages is the shortes
 
 ### AC-3 — SPA reachable after deploy
 > Given `deploy-web` completes,
-> Then `https://billi-web-staging.pages.dev/` (or `https://<commit-sha>.billi-web-staging.pages.dev/` for the per-commit preview) returns HTTP 200 and serves the Vite-bundled SPA.
+> Then `https://billi-web-staging-6pj.pages.dev/` (or `https://<commit-sha>.billi-web-staging-6pj.pages.dev/` for the per-commit preview) returns HTTP 200 and serves the Vite-bundled SPA.
 
 ### AC-4 — Staging URLs visible in job summary
 > Given a deploy run completes (green or red),
@@ -133,7 +133,7 @@ workers_dev = false
 | Secret | Value | Source |
 |---|---|---|
 | `CF_API_TOKEN` | Cloudflare API token scoped to staging deploys | Created by operator via CF dashboard (scopes in §5) |
-| `CF_ACCOUNT_ID` | `4105f6b01897184bf93014d65f1a60f7` | Provided by user (personal Cloudflare account) |
+| `CF_ACCOUNT_ID` | `48f381bf59212dbd98d2b424ba4b9a04` | Provided by user (Agentic Engineering org Cloudflare account; see `docs/ops/cloudflare-setup.md`) |
 
 ### 4.3 Canonical CF API token scopes
 
@@ -188,7 +188,7 @@ TTL: rotate every 90 days. No other scopes. Reject any recipe that requests "Acc
   - [ ] Dashboard URL for token creation (`https://dash.cloudflare.com/profile/api-tokens`).
   - [ ] Four `wrangler secret put --env staging <NAME>` commands (one per runtime secret).
   - [ ] `wrangler pages project create billi-web-staging --production-branch=main` one-time command.
-  - [ ] Account ID `4105f6b01897184bf93014d65f1a60f7` recorded with a note that it is NOT sensitive but goes into `CF_ACCOUNT_ID` secret for symmetry.
+  - [ ] Account ID `48f381bf59212dbd98d2b424ba4b9a04` (Agentic Engineering org) recorded with a note that it is NOT sensitive but goes into `CF_ACCOUNT_ID` secret for symmetry.
 - [ ] `apps/web/.env.local.example` includes `VITE_API_BASE_URL=`.
 - [ ] No `bun install` runs anywhere in a hand-edited commit (install happens only in CI and on developer machines).
 
