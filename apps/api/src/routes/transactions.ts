@@ -39,15 +39,7 @@ router.post("/", zValidator("json", newTransactionSchema, (result, c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const body = c.req.valid("json");
-  const isTest = c.env.VITEST === 'true';
-
-  // Ensure table exists in memory for tests
-  if (isTest && c.env.TURSO_DATABASE_URL?.includes('memory')) {
-    const { sql } = await import('drizzle-orm');
-    try {
-      await db.run(sql`CREATE TABLE IF NOT EXISTS transactions (id TEXT PRIMARY KEY, owner_id TEXT, type TEXT, amount_cents INTEGER, currency TEXT, category TEXT, occurred_at INTEGER, source TEXT, source_ref TEXT, note TEXT, created_at INTEGER DEFAULT (unixepoch()) NOT NULL, updated_at INTEGER)`);
-    } catch { /* ignore */ }
-  }
+  const isTest = import.meta.env.MODE === 'test';
 
   const id = ulid();
   // @ts-expect-error - input needs id which is added here
@@ -70,15 +62,7 @@ router.get("/", zValidator("query", listFilterSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const query = c.req.valid("query");
-  const isTest = c.env.VITEST === 'true';
-
-  // Ensure table exists in memory for tests
-  if (isTest && c.env.TURSO_DATABASE_URL?.includes('memory')) {
-    const { sql } = await import('drizzle-orm');
-    try {
-      await db.run(sql`CREATE TABLE IF NOT EXISTS transactions (id TEXT PRIMARY KEY, owner_id TEXT, type TEXT, amount_cents INTEGER, currency TEXT, category TEXT, occurred_at INTEGER, source TEXT, source_ref TEXT, note TEXT, created_at INTEGER DEFAULT (unixepoch()) NOT NULL, updated_at INTEGER)`);
-    } catch { /* ignore */ }
-  }
+  const isTest = import.meta.env.MODE === 'test';
 
   const filter: ListFilter = {};
   if (query.type) filter.type = query.type as "income" | "expense";
@@ -162,7 +146,7 @@ router.get("/:id", zValidator("param", transactionIdParamSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = c.env.VITEST === 'true';
+  const isTest = import.meta.env.MODE === 'test';
 
   try {
     const tx = await getTransactionById(db, id, userId);
@@ -190,7 +174,7 @@ router.patch(
     const db = c.get("db");
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const isTest = c.env.VITEST === 'true';
+    const isTest = import.meta.env.MODE === 'test';
 
     const patch: Partial<NewTransaction> = {};
     if (body.type) patch.type = body.type as "income" | "expense";
@@ -220,7 +204,7 @@ router.delete("/:id", zValidator("param", transactionIdParamSchema), async (c) =
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = c.env.VITEST === 'true';
+  const isTest = import.meta.env.MODE === 'test';
 
   try {
     const deleted = await deleteTransaction(db, id, userId);

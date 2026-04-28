@@ -66,6 +66,11 @@ drizzle/meta/_journal.json.bak
 *.db-journal
 *.sqlite
 *.sqlite3
+*.sqlite-journal
+test_*.db
+
+# Wrangler dev secrets (never commit). The example file at apps/api/.dev.vars.example is OK.
+apps/api/.dev.vars
 
 # Misc
 *.tsbuildinfo
@@ -84,3 +89,7 @@ bun.lockb
 # Claude Code scheduler lock
 .claude/scheduled_tasks.lock
 .mastra
+
+
+# Pi-seshat session state and audit logs (per-machine, not source code).
+.pi/
