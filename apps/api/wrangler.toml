@@ -102,7 +102,7 @@ bucket_name = "billi-documents-staging"
 # The Worker refuses to dispatch /api/* in staging without this binding.
 [[env.staging.kv_namespaces]]
 binding = "AI_CHAT_RATE_LIMIT"
-id = "REPLACE_WITH_STAGING_KV_ID"
+id = "dc456a3a25d3499595f656d6bb597436"
 
 [env.production]
 name = "billi-api-production"
