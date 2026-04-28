@@ -4,7 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
-    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers", "node"],
+    "types": ["@cloudflare/workers-types", "node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

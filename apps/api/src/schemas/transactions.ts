@@ -6,8 +6,6 @@ export const newTransactionSchema = z.object({
   currency: z.string().length(3).default("MXN"),
   category: z.string().min(1).max(32),
   occurredAt: z.number().int().positive(),
-  source: z.enum(["form", "text", "voice", "image", "chat"]),
-  sourceRef: z.string().optional(),
   note: z.string().max(280).optional().nullable(),
 });
 

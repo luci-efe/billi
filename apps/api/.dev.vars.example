@@ -1,5 +1,28 @@
-# Copy to apps/api/.dev.vars (git-ignored). Loaded automatically by `wrangler dev`.
+# Copy this file to apps/api/.dev.vars (git-ignored) and fill in real values.
+# Loaded automatically by `wrangler dev`. Do NOT commit `.dev.vars`.
+#
+# All variables below are required for the API to boot in dev.
+
+# Clerk backend secret key (sk_test_... in dev, sk_live_... in prod).
 CLERK_SECRET_KEY=sk_test_replace_me
+
+# Optional: Clerk publishable key. Only needed if a route reads it server-side.
+# CLERK_PUBLISHABLE_KEY=pk_test_replace_me
+
+# Turso / libSQL connection. URL like libsql://<db>-<org>.turso.io and a token
+# minted from `turso db tokens create <db>`.
 TURSO_DATABASE_URL=libsql://billi-dev-<you>.turso.io
 TURSO_AUTH_TOKEN=replace_me
+
+# OpenRouter API key. Used for chat (BILLI_LLM_MODEL), vision
+# (BILLI_VISION_MODEL), and embeddings (openai/text-embedding-3-small) via
+# https://openrouter.ai/api/v1.
 OPENROUTER_API_KEY=replace_me
+
+
+# OPTIONAL: deploy target. Defaults to "local" via wrangler.toml; staging /
+# production are set there. The Worker refuses to dispatch /api/* in
+# `staging` or `production` if the AI_CHAT_RATE_LIMIT KV namespace is missing
+# (fail-closed). Override here only if you're testing the production-shaped
+# code path against a real KV namespace bound via miniflare.
+# BILLI_ENV=local

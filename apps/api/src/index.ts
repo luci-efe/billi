@@ -5,6 +5,8 @@ import { UserRepository } from '@billi/db';
 import type { Env } from './env';
 import { createDb } from './db';
 import aiRouter from './routes/ai';
+import captureRouter from './routes/capture';
+import documentsRouter from './routes/documents';
 import transactionsRouter from './routes/transactions';
 import { getSummary } from '@billi/db/repos/transactions';
 
@@ -12,59 +14,64 @@ type Variables = {
   userId: string;
   db: ReturnType<typeof createDb>;
   userRepo: UserRepository;
+  requestId: string;
 };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+// Tag every /api/* request with a UUID so logs and 5xx error responses can
+// be correlated without leaking internal error details to the client.
+// Runs before the rate-limit guard and the auth middleware so even auth
+// failures get a request id.
+app.use('/api/*', async (c, next) => {
+  c.set('requestId', crypto.randomUUID());
+  return next();
+});
+
+
+// Boot-time deploy assertion: refuse to dispatch /api/* in staging or
+// production if the rate-limit KV namespace isn't bound. The limiter fails
+// open by design (so dev / tests don't have to provision a KV namespace),
+// which means a missing binding silently disables abuse protection. We can't
+// afford that against OpenRouter spend, so we fail closed at the edge.
+app.use('/api/*', async (c, next) => {
+  if (__BILLI_TEST__) return next();
+  const env = c.env.BILLI_ENV;
+  const isHostedDeploy = env === 'staging' || env === 'production';
+  if (isHostedDeploy && !c.env.AI_CHAT_RATE_LIMIT) {
+    console.error('Refusing to dispatch: AI_CHAT_RATE_LIMIT KV namespace not bound in', env);
+    return c.json({ error: 'misconfigured', detail: 'rate_limiter_unbound' }, 503);
+  }
+  return next();
+});
+
 // Auth middleware - must be before protected routes
 app.use('/api/*', async (c, next) => {
-  const isTest = c.env.VITEST === 'true';
-  const db = createDb(c.env);
-  
+  const isTest = __BILLI_TEST__;
   if (isTest) {
-    // Simple mock auth for tests
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return c.json({ error: 'unauthenticated' }, 401);
     }
     const userId = authHeader.replace('Bearer ', '');
     c.set('userId', userId);
-    
-    // For tests, we use a very simple mock if credentials are missing
-    // to avoid libSQL initialization errors in the test pool
-    if (!c.env.TURSO_DATABASE_URL || c.env.TURSO_DATABASE_URL.includes('replace_me')) {
-      // Create a minimal mock DB that satisfies the interface for basic tests
-      const mockDb = {
-        run: async () => ({ success: true }),
-        select: () => ({ 
-          from: () => ({ 
-            where: () => ({ 
-              get: async () => null, 
-              all: async () => [], 
-              limit: () => ({ 
-                get: async () => null, 
-                all: async () => [] 
-              }) 
-            }) 
-          }) 
-        }),
-        insert: () => ({ values: () => ({ onConflictDoUpdate: async () => ({}) }) }),
-        update: () => ({ set: () => ({ where: async () => ({}) }) }),
-        delete: () => ({ where: () => ({ returning: async () => ([]) }) }),
-        query: {
-          users: { findFirst: async () => null },
-          transactions: { findMany: async () => [] },
-        },
-      };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      c.set('db', mockDb as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      c.set('userRepo', new UserRepository(mockDb as any));
-    } else {
-      c.set('db', db);
-      c.set('userRepo', new UserRepository(db));
+
+    // The Workers/vitest pool runs the libsql *web* client, which cannot
+    // open `file:` URLs. Tests therefore use the miniflare-provided D1
+    // binding and a drizzle-orm/d1 session — same query API as
+    // drizzle-orm/libsql, different driver. The cast hides the wider type.
+    const [{ drizzle: drizzleD1 }, schema] = await Promise.all([
+      import('drizzle-orm/d1'),
+      import('@billi/db/schema'),
+    ]);
+    if (!c.env.BILLI_DB) {
+      return c.json({ error: 'test_db_unbound' }, 500);
     }
-    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = drizzleD1(c.env.BILLI_DB, { schema }) as any;
+    c.set('db', db);
+    c.set('userRepo', new UserRepository(db));
+
     await next();
   } else {
     // Dynamically import Clerk dependencies to avoid ESM/CJS issues in Vitest
@@ -78,6 +85,7 @@ app.use('/api/*', async (c, next) => {
     if (result) return result;
     
     if (nextCalled) {
+      const db = createDb(c.env);
       const auth = getAuth(c);
       if (!auth?.userId) {
         return c.json({ error: 'unauthenticated' }, 401);
@@ -94,20 +102,25 @@ app.use('/api/*', async (c, next) => {
 app.get('/health', (c) => c.json({ ok: true, service: 'billi-api' }));
 
 app.onError((err, c) => {
-  console.error('Hono Error:', err);
-  return c.json({ error: 'internal_server_error', message: err.message }, 500);
+  // ARC-NEW-06 / SEC-NEW-14: never leak err.message to clients. Log the full
+  // error server-side keyed by requestId; return only the id to the caller.
+  const requestId = c.get('requestId') ?? crypto.randomUUID();
+  console.error('Hono Error', { requestId, err });
+  return c.json({ error: 'internal_server_error', requestId }, 500);
 });
 
 // Feature routes land here
 app.route('/api/transactions', transactionsRouter);
 app.route('/api/ai', aiRouter);
+app.route('/api/capture', captureRouter);
+app.route('/api', documentsRouter);
 
 // GET /api/me
 app.get('/api/me', async (c) => {
   const userId = c.get('userId');
   const userRepo = c.get('userRepo');
   
-  const isTest = c.env.VITEST === 'true';
+  const isTest = __BILLI_TEST__;
   let email = '';
   if (!isTest) {
     const { getAuth } = await import('@hono/clerk-auth');
@@ -203,7 +216,7 @@ app.post('/api/me/consent', async (c) => {
       .set({ consentV: version, consentAt: acceptedAt })
       .where(eq(users.id, userId));
   } catch (err) {
-    const isTest = c.env.VITEST === 'true' || (globalThis as Record<string, unknown>).VITEST === 'true';
+    const isTest = __BILLI_TEST__;
     if (!isTest) throw err;
   }
   
@@ -284,7 +297,7 @@ app.get('/api/dashboard/summary', async (c) => {
       categories
     });
   } catch (err) {
-    const isTest = c.env.VITEST === 'true';
+    const isTest = __BILLI_TEST__;
     if (isTest) {
       return c.json({ 
         current: { income: 0, expense: 0, balance: 0 },

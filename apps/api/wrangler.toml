@@ -6,14 +6,56 @@
 
 name = "billi-api"
 main = "src/index.ts"
-compatibility_date = "2026-04-01"
+compatibility_date = "2026-04-26"
 compatibility_flags = ["nodejs_compat"]
+# Note: with compatibility_date >= 2024-09-23, "nodejs_compat" auto-implies the
+# v2 behavior of the Node.js compat layer; no explicit "nodejs_compat_v2" flag
+# is needed (see Wrangler v4 docs).
 
 # Secrets (set with `wrangler secret put <NAME>` in prod; `.dev.vars` in dev):
 #   CLERK_SECRET_KEY
 #   TURSO_DATABASE_URL
 #   TURSO_AUTH_TOKEN
 #   OPENROUTER_API_KEY
+
+# Build-time constants (esbuild --define). These are substituted as literal
+# JS at bundle time, NOT exposed as env vars at runtime. Vitest sets the same
+# key to `true` in `vitest.config.ts`'s `define` block, so the test branches
+# are dead-code-eliminated from the production / staging / local-dev bundles.
+# See src/types/runtime-flags.d.ts.
+[define]
+"__BILLI_TEST__" = "false"
+
+# Non-secret defaults exposed to the Worker via `c.env`. Per-env [env.*.vars]
+# blocks override. BILLI_ENV identifies the deploy target so the rate-limit
+# fail-closed assertion in src/index.ts can distinguish prod from local dev.
+[vars]
+BILLI_ENV = "local"
+BILLI_LLM_MODEL = "openai/gpt-4o-mini"
+BILLI_VISION_MODEL = "openai/gpt-4o-mini"
+
+# R2 bucket for uploaded source documents (receipts, invoices, statements).
+# Bucket name overridden per environment below.
+[[r2_buckets]]
+binding = "DOCUMENTS_BUCKET"
+bucket_name = "billi-documents-dev"
+preview_bucket_name = "billi-documents-dev"
+
+# KV namespace backing the rate limiter on /api/ai/chat and /api/capture.
+#
+# Operator action required before deploying to staging or production:
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env staging
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env production
+# Paste the returned IDs into the per-env [[env.*.kv_namespaces]] blocks below.
+#
+# Local-dev binding (this top-level block) uses miniflare's in-memory KV, so
+# no real namespace is required. The Worker's boot-time assertion in
+# src/index.ts refuses to start in `staging` / `production` if the binding is
+# missing — fail closed.
+[[kv_namespaces]]
+binding = "AI_CHAT_RATE_LIMIT"
+id = "ai_chat_rate_limit_dev"
+preview_id = "ai_chat_rate_limit_dev_preview"
 
 # [[routes]]
 # pattern = "billi.example.com/api/*"
@@ -37,6 +79,25 @@ workers_dev = true            # reach via https://billi-api-staging.<subdomain>.
 #   wrangler secret put TURSO_AUTH_TOKEN     --env staging
 #   wrangler secret put OPENROUTER_API_KEY   --env staging
 
+[env.staging.define]
+"__BILLI_TEST__" = "false"
+
+[env.staging.vars]
+BILLI_ENV = "staging"
+BILLI_LLM_MODEL = "openai/gpt-4o-mini"
+BILLI_VISION_MODEL = "openai/gpt-4o-mini"
+
+[[env.staging.r2_buckets]]
+binding = "DOCUMENTS_BUCKET"
+bucket_name = "billi-documents-staging"
+
+# IMPORTANT: replace the placeholder id with the real one returned by
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env staging
+# The Worker refuses to dispatch /api/* in staging without this binding.
+[[env.staging.kv_namespaces]]
+binding = "AI_CHAT_RATE_LIMIT"
+id = "REPLACE_WITH_STAGING_KV_ID"
+
 [env.production]
 name = "billi-api-production"
 workers_dev = false
@@ -46,3 +107,22 @@ workers_dev = false
 # [[env.production.routes]]
 # pattern = "billi.example.com/api/*"
 # zone_name = "billi.example.com"
+
+[env.production.define]
+"__BILLI_TEST__" = "false"
+
+[env.production.vars]
+BILLI_ENV = "production"
+BILLI_LLM_MODEL = "openai/gpt-4o-mini"
+BILLI_VISION_MODEL = "openai/gpt-4o-mini"
+
+[[env.production.r2_buckets]]
+binding = "DOCUMENTS_BUCKET"
+bucket_name = "billi-documents-production"
+
+# IMPORTANT: replace the placeholder id with the real one returned by
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env production
+# The Worker refuses to dispatch /api/* in production without this binding.
+[[env.production.kv_namespaces]]
+binding = "AI_CHAT_RATE_LIMIT"
+id = "REPLACE_WITH_PRODUCTION_KV_ID"

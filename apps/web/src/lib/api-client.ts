@@ -26,4 +26,16 @@ export const apiClient = {
   patch: (path: string, body?: unknown, options?: RequestInit) => 
     apiFetch(path, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   delete: (path: string, options?: RequestInit) => apiFetch(path, { ...options, method: 'DELETE' }),
+  /**
+   * Multipart upload — DOES NOT set Content-Type so the browser/runtime
+   * generates the correct boundary. credentials:'include' is preserved.
+   */
+  postFormData: async (path: string, formData: FormData): Promise<Response> => {
+    const url = `${API_BASE_URL}${path}`;
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+  },
 };

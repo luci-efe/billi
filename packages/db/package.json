@@ -7,7 +7,9 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema/index.ts",
     "./client": "./src/client.ts",
-    "./repos/transactions": "./src/repos/transactions.ts"
+    "./repos/transactions": "./src/repos/transactions.ts",
+    "./repos/documents": "./src/repos/documents.ts",
+    "./repos/rag": "./src/repos/rag.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",

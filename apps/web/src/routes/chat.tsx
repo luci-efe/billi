@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useCapture } from "@/hooks/use-capture";
+import CaptureProposalReview from "@/components/CaptureProposalReview";
 import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
 
@@ -37,6 +39,9 @@ export default function Chat() {
   const { messages, isLoading, sendMessage, clearChat } = useChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const capture = useCapture();
+  const [captureOpen, setCaptureOpen] = useState(false);
+
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -59,6 +64,32 @@ export default function Chat() {
       toast.success("Conversación reiniciada");
     }
   };
+
+  const handleOpenCapture = async () => {
+    const prompt = input.trim();
+    if (!prompt) {
+      toast.info("Escribe lo que quieres registrar (p. ej. 'gast\u00e9 200 en gasolina')");
+      return;
+    }
+    setCaptureOpen(true);
+    const result = await capture.submitCapture({ message: prompt });
+    if (result.error || !result.proposal) {
+      toast.error("No pudimos generar una propuesta. Revisa el mensaje.");
+    }
+  };
+
+  const handleConfirmCapture = async (next: typeof capture.proposal) => {
+    if (!next) return;
+    try {
+      await capture.confirmProposal(next);
+      toast.success("Movimiento registrado con \u00e9xito");
+      setCaptureOpen(false);
+      setInput("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al registrar");
+    }
+  };
+
 
   return (
     <div className="flex h-[calc(100vh-160px)] flex-col gap-4 animate-in fade-in duration-500">
@@ -154,6 +185,17 @@ export default function Chat() {
                   disabled={isLoading}
                   className="bg-slate-950 border-slate-800 focus-visible:ring-indigo-500"
                 />
+                <Button
+                  type="button"
+                  onClick={handleOpenCapture}
+                  disabled={capture.isLoading || !input.trim()}
+                  aria-label="Registrar movimiento"
+                  title="Registrar movimiento"
+                  variant="outline"
+                  className="border-slate-800 bg-slate-950 text-indigo-300 hover:bg-slate-800 hover:text-indigo-200"
+                >
+                  {capture.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                </Button>
                 <Button onClick={handleSend} disabled={isLoading || !input.trim()} className="bg-indigo-600 hover:bg-indigo-500">
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
@@ -207,6 +249,17 @@ export default function Chat() {
           </Card>
         </div>
       </div>
+
+      <CaptureProposalReview
+        open={captureOpen}
+        onOpenChange={setCaptureOpen}
+        proposal={capture.proposal}
+        confidence={capture.confidence}
+        lowConfidenceFields={capture.lowConfidenceFields}
+        isLoading={capture.isLoading}
+        error={capture.error}
+        onConfirm={handleConfirmCapture}
+      />
     </div>
   );
 }

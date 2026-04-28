@@ -4,12 +4,15 @@ import {
   Search, 
   ArrowUpRight, 
   ArrowDownRight,
-  MoreHorizontal,
   Download,
   Filter,
   Trash2,
-  Tag
+  Tag,
+  Paperclip
 } from "lucide-react";
+import EvidenceUploader from "@/components/EvidenceUploader";
+import EvidenceViewer from "@/components/EvidenceViewer";
+import { useDocuments } from "@/hooks/use-documents";
 import { 
   Card, 
   CardContent, 
@@ -48,6 +51,37 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTransactions } from "@/hooks/use-transactions";
+
+function EvidenceCell({ transactionId }: { transactionId: string }) {
+  const [open, setOpen] = useState(false);
+  const { documents, isLoading, refresh } = useDocuments(open ? transactionId : null);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-slate-500 hover:text-white"
+          aria-label="Comprobantes"
+        >
+          <Paperclip className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Comprobantes</DialogTitle>
+          <DialogDescription className="text-slate-400">
+            Sube imágenes o PDFs (máx. 5MB) ligados a este movimiento.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <EvidenceUploader transactionId={transactionId} onUploaded={refresh} />
+          <EvidenceViewer documents={documents} isLoading={isLoading} onDeleted={refresh} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function Transactions() {
   const [filterType, setFilterType] = useState("all");
@@ -406,9 +440,7 @@ export default function Transactions() {
                       {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amountCents)}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <EvidenceCell transactionId={tx.id} />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -49,13 +49,24 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-bun
-      - name: Run tests (non-blocking — no suites exist yet)
-        id: run-tests
+      - name: Run tests across all workspaces
         run: bun run test
-        continue-on-error: true
-      - name: Emit warning annotation when tests fail
-        if: steps.run-tests.outcome == 'failure'
-        run: echo "::warning::Test suite failed but is non-blocking per AC-3. Add tests to make this check blocking."
+
+  deploy-dryrun:
+    name: deploy-dryrun
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [staging, production]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-bun
+      - name: wrangler deploy --dry-run --env ${{ matrix.env }}
+        # Catches bundling regressions (missing imports, broken aliases,
+        # bad node_modules state, define mismatches) that runtime tests miss.
+        run: bunx wrangler deploy --dry-run --env ${{ matrix.env }}
+        working-directory: apps/api
 
   schema-drift:
     name: schema-drift
