@@ -14,13 +14,40 @@ type Variables = {
   userId: string;
   db: ReturnType<typeof createDb>;
   userRepo: UserRepository;
+  requestId: string;
 };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+// Tag every /api/* request with a UUID so logs and 5xx error responses can
+// be correlated without leaking internal error details to the client.
+// Runs before the rate-limit guard and the auth middleware so even auth
+// failures get a request id.
+app.use('/api/*', async (c, next) => {
+  c.set('requestId', crypto.randomUUID());
+  return next();
+});
+
+
+// Boot-time deploy assertion: refuse to dispatch /api/* in staging or
+// production if the rate-limit KV namespace isn't bound. The limiter fails
+// open by design (so dev / tests don't have to provision a KV namespace),
+// which means a missing binding silently disables abuse protection. We can't
+// afford that against OpenRouter spend, so we fail closed at the edge.
+app.use('/api/*', async (c, next) => {
+  if (__BILLI_TEST__) return next();
+  const env = c.env.BILLI_ENV;
+  const isHostedDeploy = env === 'staging' || env === 'production';
+  if (isHostedDeploy && !c.env.AI_CHAT_RATE_LIMIT) {
+    console.error('Refusing to dispatch: AI_CHAT_RATE_LIMIT KV namespace not bound in', env);
+    return c.json({ error: 'misconfigured', detail: 'rate_limiter_unbound' }, 503);
+  }
+  return next();
+});
+
 // Auth middleware - must be before protected routes
 app.use('/api/*', async (c, next) => {
-  const isTest = import.meta.env.MODE === 'test';
+  const isTest = __BILLI_TEST__;
   if (isTest) {
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -75,8 +102,11 @@ app.use('/api/*', async (c, next) => {
 app.get('/health', (c) => c.json({ ok: true, service: 'billi-api' }));
 
 app.onError((err, c) => {
-  console.error('Hono Error:', err);
-  return c.json({ error: 'internal_server_error', message: err.message }, 500);
+  // ARC-NEW-06 / SEC-NEW-14: never leak err.message to clients. Log the full
+  // error server-side keyed by requestId; return only the id to the caller.
+  const requestId = c.get('requestId') ?? crypto.randomUUID();
+  console.error('Hono Error', { requestId, err });
+  return c.json({ error: 'internal_server_error', requestId }, 500);
 });
 
 // Feature routes land here
@@ -90,7 +120,7 @@ app.get('/api/me', async (c) => {
   const userId = c.get('userId');
   const userRepo = c.get('userRepo');
   
-  const isTest = import.meta.env.MODE === 'test';
+  const isTest = __BILLI_TEST__;
   let email = '';
   if (!isTest) {
     const { getAuth } = await import('@hono/clerk-auth');
@@ -186,7 +216,7 @@ app.post('/api/me/consent', async (c) => {
       .set({ consentV: version, consentAt: acceptedAt })
       .where(eq(users.id, userId));
   } catch (err) {
-    const isTest = import.meta.env.MODE === 'test';
+    const isTest = __BILLI_TEST__;
     if (!isTest) throw err;
   }
   
@@ -267,7 +297,7 @@ app.get('/api/dashboard/summary', async (c) => {
       categories
     });
   } catch (err) {
-    const isTest = import.meta.env.MODE === 'test';
+    const isTest = __BILLI_TEST__;
     if (isTest) {
       return c.json({ 
         current: { income: 0, expense: 0, balance: 0 },

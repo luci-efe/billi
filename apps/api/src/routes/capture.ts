@@ -7,7 +7,7 @@ import { captureRequestSchema } from '../schemas/capture';
 import type { Env } from '../env';
 import type { DB } from '../db';
 
-const router = new Hono<{ Bindings: Env; Variables: { userId: string; db: DB } }>();
+const router = new Hono<{ Bindings: Env; Variables: { userId: string; db: DB; requestId: string } }>();
 
 // POST /api/capture
 router.post('/', zValidator('json', captureRequestSchema), async (c) => {
@@ -28,7 +28,7 @@ router.post('/', zValidator('json', captureRequestSchema), async (c) => {
   }
 
   const openRouterApiKey = c.env.OPENROUTER_API_KEY;
-  if (!openRouterApiKey && import.meta.env.MODE !== 'test') {
+  if (!openRouterApiKey && !__BILLI_TEST__) {
     return c.json({ error: 'missing_api_key' }, 500);
   }
 
@@ -75,7 +75,7 @@ router.post('/', zValidator('json', captureRequestSchema), async (c) => {
   } catch (err) {
     console.error('Capture route error:', err);
     return c.json(
-      { error: 'capture_error', message: (err as Error).message },
+      { error: 'capture_error', requestId: c.get('requestId') },
       500,
     );
   }

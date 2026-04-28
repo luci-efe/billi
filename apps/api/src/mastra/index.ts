@@ -19,7 +19,7 @@ export function getMastra(env: Env): Promise<Mastra> {
   const promise = (async () => {
     // In test mode, swap LibSQL for an in-memory store so workflow runs
     // never hit the network. Production paths stay on Turso/libsql.
-    const isTest = import.meta.env.MODE === 'test';
+    const isTest = __BILLI_TEST__;
     const [
       { Mastra },
       libsqlMod,

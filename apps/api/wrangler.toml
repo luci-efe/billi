@@ -18,19 +18,19 @@ compatibility_flags = ["nodejs_compat"]
 #   TURSO_AUTH_TOKEN
 #   OPENROUTER_API_KEY
 
-# Module aliases applied at bundle time by wrangler/esbuild. Mastra's pre-built
-# chunks import `node:os` for tracing/diagnostics, but our worker never
-# exercises those code paths. The pinned vitest-pool-workers' workerd build
-# does not surface `node:os` even with nodejs_compat_v2, and a wrangler-level
-# alias is the cleanest place to neutralise the import for both prod and test
-# without touching Mastra's source. The stub is a no-op object exposing the
-# same surface (tmpdir/cpus/etc.).
-[alias]
-"node:os" = "./src/tests/mocks/node-os.ts"
+# Build-time constants (esbuild --define). These are substituted as literal
+# JS at bundle time, NOT exposed as env vars at runtime. Vitest sets the same
+# key to `true` in `vitest.config.ts`'s `define` block, so the test branches
+# are dead-code-eliminated from the production / staging / local-dev bundles.
+# See src/types/runtime-flags.d.ts.
+[define]
+"__BILLI_TEST__" = "false"
 
-
-# Non-secret defaults exposed to the Worker. Per-env [env.*.vars] blocks override.
+# Non-secret defaults exposed to the Worker via `c.env`. Per-env [env.*.vars]
+# blocks override. BILLI_ENV identifies the deploy target so the rate-limit
+# fail-closed assertion in src/index.ts can distinguish prod from local dev.
 [vars]
+BILLI_ENV = "local"
 BILLI_LLM_MODEL = "openai/gpt-4o-mini"
 BILLI_VISION_MODEL = "openai/gpt-4o-mini"
 
@@ -41,16 +41,22 @@ binding = "DOCUMENTS_BUCKET"
 bucket_name = "billi-documents-dev"
 preview_bucket_name = "billi-documents-dev"
 
-# KV namespace backing the soft rate limiter on /api/ai/chat and /api/capture.
-# TODO: run `wrangler kv namespace create AI_CHAT_RATE_LIMIT` (and once with
-# `--preview`) and paste the returned IDs below. The dev loop works without
-# these IDs because the limiter fails open when the binding is missing.
-# [[kv_namespaces]]
-# binding = "AI_CHAT_RATE_LIMIT"
-# id = "REPLACE_WITH_KV_ID"
-# preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
-# Uncomment after running the create command. Without the binding, the
-# limiter fails open (allows all requests), so the dev loop keeps working.
+# KV namespace backing the rate limiter on /api/ai/chat and /api/capture.
+#
+# Operator action required before deploying to staging or production:
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env staging
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env production
+# Paste the returned IDs into the per-env [[env.*.kv_namespaces]] blocks below.
+#
+# Local-dev binding (this top-level block) uses miniflare's in-memory KV, so
+# no real namespace is required. The Worker's boot-time assertion in
+# src/index.ts refuses to start in `staging` / `production` if the binding is
+# missing — fail closed.
+[[kv_namespaces]]
+binding = "AI_CHAT_RATE_LIMIT"
+id = "ai_chat_rate_limit_dev"
+preview_id = "ai_chat_rate_limit_dev_preview"
+
 # [[routes]]
 # pattern = "billi.example.com/api/*"
 # zone_name = "billi.example.com"
@@ -73,7 +79,11 @@ workers_dev = true            # reach via https://billi-api-staging.<subdomain>.
 #   wrangler secret put TURSO_AUTH_TOKEN     --env staging
 #   wrangler secret put OPENROUTER_API_KEY   --env staging
 
+[env.staging.define]
+"__BILLI_TEST__" = "false"
+
 [env.staging.vars]
+BILLI_ENV = "staging"
 BILLI_LLM_MODEL = "openai/gpt-4o-mini"
 BILLI_VISION_MODEL = "openai/gpt-4o-mini"
 
@@ -81,10 +91,12 @@ BILLI_VISION_MODEL = "openai/gpt-4o-mini"
 binding = "DOCUMENTS_BUCKET"
 bucket_name = "billi-documents-staging"
 
-# TODO: `wrangler kv namespace create AI_CHAT_RATE_LIMIT --env staging` and paste the id.
-# [[env.staging.kv_namespaces]]
-# binding = "AI_CHAT_RATE_LIMIT"
-# id = "REPLACE_WITH_STAGING_KV_ID"
+# IMPORTANT: replace the placeholder id with the real one returned by
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env staging
+# The Worker refuses to dispatch /api/* in staging without this binding.
+[[env.staging.kv_namespaces]]
+binding = "AI_CHAT_RATE_LIMIT"
+id = "REPLACE_WITH_STAGING_KV_ID"
 
 [env.production]
 name = "billi-api-production"
@@ -96,7 +108,11 @@ workers_dev = false
 # pattern = "billi.example.com/api/*"
 # zone_name = "billi.example.com"
 
+[env.production.define]
+"__BILLI_TEST__" = "false"
+
 [env.production.vars]
+BILLI_ENV = "production"
 BILLI_LLM_MODEL = "openai/gpt-4o-mini"
 BILLI_VISION_MODEL = "openai/gpt-4o-mini"
 
@@ -104,7 +120,9 @@ BILLI_VISION_MODEL = "openai/gpt-4o-mini"
 binding = "DOCUMENTS_BUCKET"
 bucket_name = "billi-documents-production"
 
-# TODO: `wrangler kv namespace create AI_CHAT_RATE_LIMIT --env production` and paste the id.
-# [[env.production.kv_namespaces]]
-# binding = "AI_CHAT_RATE_LIMIT"
-# id = "REPLACE_WITH_PRODUCTION_KV_ID"
+# IMPORTANT: replace the placeholder id with the real one returned by
+#   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env production
+# The Worker refuses to dispatch /api/* in production without this binding.
+[[env.production.kv_namespaces]]
+binding = "AI_CHAT_RATE_LIMIT"
+id = "REPLACE_WITH_PRODUCTION_KV_ID"

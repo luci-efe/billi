@@ -1,18 +1,40 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import type { RequestContext as RequestContextType } from '@mastra/core/request-context';
 import { getMastra } from '../mastra';
 import { rateLimit } from '../lib/rate-limit';
 import type { Env } from '../env';
 import type { DB } from '../db';
 
-const router = new Hono<{ Bindings: Env; Variables: { userId: string; db: DB } }>();
+const chatRequestSchema = z.object({
+  message: z.string().min(1).max(2000),
+  threadId: z.string().optional(),
+});
+
+const router = new Hono<{ Bindings: Env; Variables: { userId: string; db: DB; requestId: string } }>();
 
 router.get('/health', (c) => {
   return c.json({ status: 'ready', agent: 'BilliAgent' });
 });
 
 router.post('/chat', async (c) => {
-  const { message } = await c.req.json<{ message: string; threadId?: string }>();
+  let payload: unknown;
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'invalid_json', message: 'El cuerpo de la solicitud no es JSON v\u00e1lido.' }, 400);
+  }
+  const parsed = chatRequestSchema.safeParse(payload);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const reason = issue?.code === 'too_big'
+      ? 'El mensaje supera el l\u00edmite de 2000 caracteres.'
+      : issue?.code === 'too_small'
+        ? 'El mensaje no puede estar vac\u00edo.'
+        : 'Solicitud inv\u00e1lida.';
+    return c.json({ error: 'invalid_request', message: reason }, 400);
+  }
+  const { message } = parsed.data;
   const userId = c.get('userId');
   const db = c.get('db');
 
@@ -30,7 +52,7 @@ router.post('/chat', async (c) => {
 
   const openRouterApiKey = c.env.OPENROUTER_API_KEY;
 
-  if (!openRouterApiKey && import.meta.env.MODE !== 'test') {
+  if (!openRouterApiKey && !__BILLI_TEST__) {
     return c.json({ error: 'missing_api_key' }, 500);
   }
 
@@ -68,7 +90,7 @@ router.post('/chat', async (c) => {
     });
   } catch (err) {
     console.error('Mastra Error:', err);
-    return c.json({ error: 'ai_error', message: (err as Error).message }, 500);
+    return c.json({ error: 'ai_error', requestId: c.get('requestId') }, 500);
   }
 });
 

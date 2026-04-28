@@ -18,3 +18,11 @@ TURSO_AUTH_TOKEN=replace_me
 # (BILLI_VISION_MODEL), and embeddings (openai/text-embedding-3-small) via
 # https://openrouter.ai/api/v1.
 OPENROUTER_API_KEY=replace_me
+
+
+# OPTIONAL: deploy target. Defaults to "local" via wrangler.toml; staging /
+# production are set there. The Worker refuses to dispatch /api/* in
+# `staging` or `production` if the AI_CHAT_RATE_LIMIT KV namespace is missing
+# (fail-closed). Override here only if you're testing the production-shaped
+# code path against a real KV namespace bound via miniflare.
+# BILLI_ENV=local

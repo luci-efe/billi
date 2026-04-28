@@ -9,6 +9,7 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
+    "pretest": "bun scripts/patch-mastra.mjs",
     "test": "vitest run"
   },
   "dependencies": {

@@ -26,6 +26,7 @@ import type { createDb } from "../db";
 type Variables = {
   userId: string;
   db: ReturnType<typeof createDb>;
+  requestId: string;
 };
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -39,13 +40,16 @@ router.post("/", zValidator("json", newTransactionSchema, (result, c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const body = c.req.valid("json");
-  const isTest = import.meta.env.MODE === 'test';
+  const isTest = __BILLI_TEST__;
 
   const id = ulid();
-  // @ts-expect-error - input needs id which is added here
+  // SEC-NEW-07: source is server-controlled. Form route always pins 'form';
+  // chat tool path pins 'chat'. Never trust client-supplied source/sourceRef.
+  // @ts-expect-error - exactOptionalPropertyTypes vs note?: string | null
   const input: NewTransaction & { id: string } = {
     ...body,
     id,
+    source: 'form' as const,
   };
   
   try {
@@ -62,7 +66,7 @@ router.get("/", zValidator("query", listFilterSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const query = c.req.valid("query");
-  const isTest = import.meta.env.MODE === 'test';
+  const isTest = __BILLI_TEST__;
 
   const filter: ListFilter = {};
   if (query.type) filter.type = query.type as "income" | "expense";
@@ -109,7 +113,8 @@ router.get("/export", zValidator("query", listFilterSchema), async (c) => {
       'Content-Disposition': `attachment; filename="billi_export_${new Date().getTime()}.csv"`,
     });
   } catch (err) {
-    return c.json({ error: "export_failed", message: (err as Error).message }, 500);
+    console.error('export_failed:', err);
+    return c.json({ error: 'export_failed', requestId: c.get('requestId') }, 500);
   }
 });
 
@@ -123,7 +128,8 @@ router.post("/bulk-delete", zValidator("json", bulkDeleteSchema), async (c) => {
     const count = await deleteTransactions(db, ids, userId);
     return c.json({ count });
   } catch (err) {
-    return c.json({ error: "bulk_delete_failed", message: (err as Error).message }, 500);
+    console.error('bulk_delete_failed:', err);
+    return c.json({ error: 'bulk_delete_failed', requestId: c.get('requestId') }, 500);
   }
 });
 
@@ -137,7 +143,8 @@ router.patch("/bulk-category", zValidator("json", bulkCategoryUpdateSchema), asy
     const count = await updateTransactionsCategory(db, ids, userId, category);
     return c.json({ count });
   } catch (err) {
-    return c.json({ error: "bulk_category_update_failed", message: (err as Error).message }, 500);
+    console.error('bulk_category_update_failed:', err);
+    return c.json({ error: 'bulk_category_update_failed', requestId: c.get('requestId') }, 500);
   }
 });
 
@@ -146,7 +153,7 @@ router.get("/:id", zValidator("param", transactionIdParamSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = import.meta.env.MODE === 'test';
+  const isTest = __BILLI_TEST__;
 
   try {
     const tx = await getTransactionById(db, id, userId);
@@ -174,7 +181,7 @@ router.patch(
     const db = c.get("db");
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const isTest = import.meta.env.MODE === 'test';
+    const isTest = __BILLI_TEST__;
 
     const patch: Partial<NewTransaction> = {};
     if (body.type) patch.type = body.type as "income" | "expense";
@@ -182,8 +189,6 @@ router.patch(
     if (body.currency) patch.currency = body.currency;
     if (body.category) patch.category = body.category;
     if (body.occurredAt !== undefined) patch.occurredAt = body.occurredAt;
-    if (body.source) patch.source = body.source as "form" | "text" | "voice" | "image" | "chat";
-    if (body.sourceRef) patch.sourceRef = body.sourceRef;
     if (body.note) patch.note = body.note;
 
     try {
@@ -204,7 +209,7 @@ router.delete("/:id", zValidator("param", transactionIdParamSchema), async (c) =
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = import.meta.env.MODE === 'test';
+  const isTest = __BILLI_TEST__;
 
   try {
     const deleted = await deleteTransaction(db, id, userId);

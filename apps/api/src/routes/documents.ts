@@ -23,6 +23,7 @@ import type { createDb } from "../db";
 type Variables = {
   userId: string;
   db: ReturnType<typeof createDb>;
+  requestId: string;
 };
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -99,8 +100,9 @@ router.post(
       } catch {
         // best-effort; surface original error
       }
+      console.error('persist_failed:', err);
       return c.json(
-        { error: "persist_failed", message: (err as Error).message },
+        { error: 'persist_failed', requestId: c.get('requestId') },
         500
       );
     }

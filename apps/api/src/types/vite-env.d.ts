@@ -1,12 +1,7 @@
-// Ambient declaration so `import.meta.env.MODE` typechecks without depending on
-// `vite/client`. Vitest (and any Vite-driven build) injects `import.meta.env`
-// at compile time; in the production Worker bundle the `MODE === 'test'`
-// branches are dead-code-eliminated.
-
-interface ImportMetaEnv {
-  readonly MODE: 'test' | 'development' | 'production' | string;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
+// Re-exported from runtime-flags.d.ts. The global `__BILLI_TEST__` boolean is
+// substituted at build time by esbuild/Wrangler/Vitest. See runtime-flags.d.ts.
+//
+// (This file used to declare `import.meta.env.MODE`, which Wrangler does NOT
+// auto-replace at deploy time — leading to a production runtime TypeError on
+// every /api/* request. Replaced with the build-time-defined boolean above.)
+export {};
