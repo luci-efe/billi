@@ -36,6 +36,10 @@ BILLI_VISION_MODEL = "openai/gpt-4o-mini"
 
 # R2 bucket for uploaded source documents (receipts, invoices, statements).
 # Bucket name overridden per environment below.
+#
+# Operator setup (one-time per env): see docs/ops/cloudflare-setup.md §5b.
+# The CF_API_TOKEN must include the `Workers R2 Storage: Edit` scope or
+# `wrangler deploy --env <staging|production>` aborts with code 10000.
 [[r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
 bucket_name = "billi-documents-dev"
@@ -43,10 +47,12 @@ preview_bucket_name = "billi-documents-dev"
 
 # KV namespace backing the rate limiter on /api/ai/chat and /api/capture.
 #
-# Operator action required before deploying to staging or production:
+# Operator setup (one-time per env): see docs/ops/cloudflare-setup.md §5c.
+# The CF_API_TOKEN must include the `Workers KV Storage: Edit` scope. Run:
 #   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env staging
 #   wrangler kv namespace create AI_CHAT_RATE_LIMIT --env production
-# Paste the returned IDs into the per-env [[env.*.kv_namespaces]] blocks below.
+# and paste the returned ids into the per-env [[env.*.kv_namespaces]] blocks
+# below, replacing the REPLACE_WITH_*_KV_ID placeholders.
 #
 # Local-dev binding (this top-level block) uses miniflare's in-memory KV, so
 # no real namespace is required. The Worker's boot-time assertion in
@@ -96,7 +102,7 @@ bucket_name = "billi-documents-staging"
 # The Worker refuses to dispatch /api/* in staging without this binding.
 [[env.staging.kv_namespaces]]
 binding = "AI_CHAT_RATE_LIMIT"
-id = "REPLACE_WITH_STAGING_KV_ID"
+id = "dc456a3a25d3499595f656d6bb597436"
 
 [env.production]
 name = "billi-api-production"
