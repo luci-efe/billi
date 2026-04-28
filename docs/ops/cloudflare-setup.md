@@ -30,11 +30,13 @@ Click **Create Token** → **Create Custom Token**.
 
 ### Required permissions
 
-| Category        | Resource               | Permission |
-|-----------------|------------------------|------------|
-| Account         | Workers Scripts        | Edit       |
-| Account         | Cloudflare Pages       | Edit       |
-| Account         | Account Settings       | Read       |
+| Category        | Resource                  | Permission |
+|-----------------|---------------------------|------------|
+| Account         | Workers Scripts           | Edit       |
+| Account         | Cloudflare Pages          | Edit       |
+| Account         | Workers R2 Storage        | Edit       |
+| Account         | Workers KV Storage        | Edit       |
+| Account         | Account Settings          | Read       |
 
 **Account resources:** Include → select *your personal account only*
 (`lfernando.rramos@gmail.com`). Do NOT select "All accounts".
@@ -112,6 +114,58 @@ URL resolves within ~30 seconds.
 
 ---
 
+## 5b. One-time R2 bucket for staging documents
+
+The Worker binds an R2 bucket (`DOCUMENTS_BUCKET`) for uploaded source
+documents (receipts, invoices, statements). Wrangler validates the binding
+during `wrangler deploy --env staging` and aborts with a code `10000`
+authentication error if either the bucket is missing or the API token
+lacks the `Workers R2 Storage: Edit` scope.
+
+Run once from a machine authenticated to the Cloudflare account:
+
+```bash
+wrangler r2 bucket create billi-documents-staging
+```
+
+Verify:
+
+```bash
+wrangler r2 bucket list | grep billi-documents-staging
+```
+
+When production goes live, repeat with `billi-documents-production`.
+
+---
+
+## 5c. One-time KV namespace for staging rate limiter
+
+The Worker binds a KV namespace (`AI_CHAT_RATE_LIMIT`) for the rate limiter
+on `/api/ai/chat` and `/api/capture`. The Worker's boot-time assertion in
+`src/index.ts` refuses to start in `staging` / `production` if the binding
+is missing — fail closed.
+
+Create the namespace once:
+
+```bash
+wrangler kv namespace create AI_CHAT_RATE_LIMIT --env staging
+```
+
+The command prints a block like:
+
+```toml
+[[kv_namespaces]]
+binding = "AI_CHAT_RATE_LIMIT"
+id = "<32-char-hex-id>"
+```
+
+Copy the `id` value and paste it into `apps/api/wrangler.toml` replacing
+the `REPLACE_WITH_STAGING_KV_ID` placeholder under `[[env.staging.kv_namespaces]]`.
+Commit the change — the id is not a secret. The same applies to the
+`production` env when it is activated (see §9).
+
+---
+
 ## 6. One-time Turso staging database
 
 Staging should use a **separate** Turso database from development to avoid
@@ -184,6 +238,10 @@ The `deploy-production.yml` workflow is currently inert. To activate it:
 - [ ] Uncomment the deploy steps in `deploy-production.yml`.
 - [ ] Set production secrets: `wrangler secret put <NAME> --env production` for
       each of the four runtime secrets.
+- [ ] Run `wrangler r2 bucket create billi-documents-production` (mirrors §5b).
+- [ ] Run `wrangler kv namespace create AI_CHAT_RATE_LIMIT --env production` and
+      paste the returned id into `[[env.production.kv_namespaces]]` in
+      `apps/api/wrangler.toml`, replacing `REPLACE_WITH_PRODUCTION_KV_ID` (mirrors §5c).
 - [ ] Token rotation: verify the CF API token has zone-edit permissions if DNS
       management is needed.
 
