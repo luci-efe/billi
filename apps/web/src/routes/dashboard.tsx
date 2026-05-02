@@ -1,38 +1,38 @@
 import { useState } from "react";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet, 
-  ArrowUpRight, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  ArrowUpRight,
   ArrowDownRight,
   Filter,
   CalendarDays
 } from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from "@/components/ui/card";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
   Cell,
   PieChart,
   Pie
 } from "recharts";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,13 @@ import { cn } from "@/lib/utils";
 import { useDashboard } from "@/hooks/use-dashboard";
 
 const CHART_COLORS = ["#818cf8", "#6366f1", "#4f46e5", "#4338ca", "#3730a3", "#312e81"];
+
+const PERIOD_LABELS: Record<string, string> = {
+  day: "Hoy",
+  week: "Esta Semana",
+  month: "Este Mes",
+  year: "Este Año",
+};
 
 export default function Dashboard() {
   const [period, setPeriod] = useState("month");
@@ -99,7 +106,7 @@ export default function Dashboard() {
           <Select value={period} onValueChange={(val) => setPeriod(val || "month")}>
             <SelectTrigger className="w-[180px] bg-slate-900 border-slate-800 text-slate-300">
               <CalendarDays className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Periodo" />
+              <SelectValue placeholder="Periodo">{PERIOD_LABELS[period]}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800 text-slate-300">
               <SelectItem value="day">Hoy</SelectItem>
@@ -190,9 +197,10 @@ export default function Dashboard() {
                   tick={{ fill: '#64748b', fontSize: 12 }} 
                   tickFormatter={(value) => `$${value}`}
                 />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-                  itemStyle={{ fontSize: '12px' }}
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#f8fafc' }}
+                  itemStyle={{ fontSize: '12px', color: '#f8fafc' }}
+                  labelStyle={{ color: '#94a3b8' }}
                   formatter={(value: unknown) => [`$${Number(value).toFixed(2)}`, '']}
                 />
                 <Bar dataKey="ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -225,9 +233,10 @@ export default function Dashboard() {
                         <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-                      itemStyle={{ fontSize: '12px' }}
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#f8fafc' }}
+                      itemStyle={{ fontSize: '12px', color: '#f8fafc' }}
+                      labelStyle={{ color: '#94a3b8' }}
                       formatter={(value: unknown) => [`$${Number(value).toFixed(2)}`, 'Monto']}
                     />
                   </PieChart>

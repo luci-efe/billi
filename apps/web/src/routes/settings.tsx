@@ -1,21 +1,24 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useMe, useUpdateMe } from "@/hooks/use-me";
-import { 
-  User as UserIcon, 
-  CreditCard, 
-  Shield, 
-  Bell, 
+import { apiClient } from "@/lib/api-client";
+import {
+  User as UserIcon,
+  CreditCard,
+  Shield,
+  Bell,
   Key,
   Zap,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  FileCheck,
+  FileWarning
 } from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
@@ -34,11 +37,12 @@ import { toast } from "sonner";
 
 export default function Settings() {
   const { user } = useUser();
-  const { data: me, isLoading } = useMe();
+  const { data: me, isLoading, mutate } = useMe();
   const { updateMe, isUpdating } = useUpdateMe();
 
   const [rfc, setRfc] = useState("");
   const [currency, setCurrency] = useState("MXN");
+  const [isAcceptingConsent, setIsAcceptingConsent] = useState(false);
 
   useEffect(() => {
     if (me) {
@@ -53,6 +57,27 @@ export default function Settings() {
       toast.success("Perfil actualizado correctamente");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al actualizar perfil");
+    }
+  };
+
+  const handleAcceptConsent = async () => {
+    setIsAcceptingConsent(true);
+    try {
+      const res = await apiClient.post("/api/me/consent", {
+        body: JSON.stringify({ version: 1, acceptedAt: Date.now() }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Error al aceptar consentimiento");
+      }
+      toast.success("Consentimiento aceptado");
+      if (me) {
+        mutate({ ...me, consentAccepted: true, consentVersion: 1 });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al aceptar consentimiento");
+    } finally {
+      setIsAcceptingConsent(false);
     }
   };
 
@@ -112,12 +137,12 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="rfc">RFC (Opcional para IA Fiscal)</Label>
-                  <Input 
-                    id="rfc" 
-                    placeholder="XXXX000000XXX" 
+                  <Input
+                    id="rfc"
+                    placeholder="XXXX000000XXX"
                     value={rfc}
                     onChange={(e) => setRfc(e.target.value)}
-                    className="bg-slate-950 border-slate-800 uppercase" 
+                    className="bg-slate-950 border-slate-800 uppercase"
                   />
                 </div>
                 <div className="space-y-2">
@@ -135,14 +160,66 @@ export default function Settings() {
               </div>
             </CardContent>
             <CardFooter className="border-t border-slate-800 pt-6">
-              <Button 
-                onClick={handleSave} 
+              <Button
+                onClick={handleSave}
                 disabled={isUpdating}
                 className="bg-indigo-600 hover:bg-indigo-500 text-white"
               >
                 {isUpdating ? "Guardando..." : "Guardar Cambios"}
               </Button>
             </CardFooter>
+          </Card>
+
+          <Card className="bg-slate-900 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                {me?.consentAccepted ? (
+                  <FileCheck className="h-5 w-5 text-emerald-400" />
+                ) : (
+                  <FileWarning className="h-5 w-5 text-amber-400" />
+                )}
+                Consentimiento de Privacidad
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                Estado de tu consentimiento para el procesamiento de datos personales.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border border-slate-800 bg-slate-950/50">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-white">
+                    {me?.consentAccepted ? "Consentimiento aceptado" : "Consentimiento pendiente"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {me?.consentAccepted
+                      ? `Versión ${me.consentVersion ?? 1} aceptada`
+                      : "Debes aceptar el consentimiento para acceder a todas las funciones."}
+                  </p>
+                </div>
+                <div>
+                  {me?.consentAccepted ? (
+                    <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Activo
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-amber-400 text-sm font-medium">
+                      <AlertCircle className="h-4 w-4" />
+                      Pendiente
+                    </div>
+                  )}
+                </div>
+              </div>
+              {!me?.consentAccepted && (
+                <Button
+                  onClick={handleAcceptConsent}
+                  disabled={isAcceptingConsent}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white"
+                >
+                  {isAcceptingConsent ? "Procesando..." : "Aceptar Consentimiento"}
+                </Button>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
 

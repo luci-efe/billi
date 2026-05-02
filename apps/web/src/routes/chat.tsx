@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { 
-  Send, 
-  Bot, 
-  User, 
+import {
+  Send,
+  Bot,
+  User,
   Sparkles,
-  Paperclip,
-  Mic,
   ArrowRight,
   Loader2,
   Trash2,
@@ -92,15 +90,15 @@ export default function Chat() {
 
 
   return (
-    <div className="flex h-[calc(100vh-160px)] flex-col gap-4 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1">
+    <div className="flex h-[calc(100vh-120px)] flex-col gap-4 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-1 shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
             Chat Billi <Sparkles className="h-6 w-6 text-indigo-400" />
           </h2>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleClearChat}
             className="text-slate-500 hover:text-rose-400 hover:bg-rose-500/10"
           >
@@ -111,9 +109,9 @@ export default function Chat() {
         <p className="text-slate-400">IA especializada en tus finanzas y contexto mexicano.</p>
       </div>
 
-      <div className="flex flex-1 gap-6 overflow-hidden">
-        <Card className="flex flex-1 flex-col bg-slate-900 border-slate-800 overflow-hidden">
-          <CardHeader className="border-b border-slate-800 bg-slate-900/50 py-3">
+      <div className="flex flex-1 gap-6 overflow-hidden min-h-0">
+        <Card className="flex flex-1 flex-col bg-slate-900 border-slate-800 overflow-hidden min-h-0">
+          <CardHeader className="border-b border-slate-800 bg-slate-900/50 py-3 shrink-0">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400">
                 <Bot className="h-5 w-5" />
@@ -130,11 +128,11 @@ export default function Chat() {
               </div>
             </div>
           </CardHeader>
-          
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+
+          <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((message) => {
-                const isTransactionSuccess = message.role === 'assistant' && 
+                const isTransactionSuccess = message.role === 'assistant' &&
                   (message.content.includes('éxito') || message.content.includes('registrada'));
 
                 return (
@@ -174,7 +172,7 @@ export default function Chat() {
             </div>
           </ScrollArea>
 
-          <CardFooter className="border-t border-slate-800 bg-slate-900/50 p-4">
+          <CardFooter className="border-t border-slate-800 bg-slate-900/50 p-4 shrink-0">
             <div className="flex w-full flex-col gap-3">
               <div className="flex gap-2">
                 <Input
@@ -183,7 +181,7 @@ export default function Chat() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
                   disabled={isLoading}
-                  className="bg-slate-950 border-slate-800 focus-visible:ring-indigo-500"
+                  className="bg-slate-950 border-slate-800 focus-visible:ring-indigo-500 text-slate-100 placeholder:text-slate-500"
                 />
                 <Button
                   type="button"
@@ -201,8 +199,6 @@ export default function Chat() {
                 </Button>
               </div>
               <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                <Paperclip className="h-3 w-3 cursor-pointer hover:text-slate-300" />
-                <Mic className="h-3 w-3 cursor-pointer hover:text-slate-300" />
                 <span className="flex-1" />
                 <span>Billi puede cometer errores. Verifica la información importante.</span>
               </div>
@@ -211,7 +207,7 @@ export default function Chat() {
         </Card>
 
         {/* Sidebar for suggested questions */}
-        <div className="hidden w-72 flex-col gap-4 lg:flex">
+        <div className="hidden w-72 flex-col gap-4 lg:flex shrink-0">
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-white">Preguntas sugeridas</CardTitle>
@@ -242,9 +238,6 @@ export default function Chat() {
               <p className="text-xs text-slate-400 leading-relaxed">
                 Tengo acceso a las últimas normativas del SAT, leyes de ahorro para el retiro y mejores prácticas financieras en México.
               </p>
-              <Button variant="link" className="px-0 text-indigo-400 text-xs h-auto mt-2">
-                Explorar temas
-              </Button>
             </CardContent>
           </Card>
         </div>

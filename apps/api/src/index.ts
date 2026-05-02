@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { eq } from 'drizzle-orm';
 import { users } from '@billi/db/schema';
 import { UserRepository } from '@billi/db';
@@ -18,6 +19,23 @@ type Variables = {
 };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// CORS middleware — must run before auth so preflight (OPTIONS) replies are
+// sent without requiring authentication.  In production the allowed origin
+// can be injected via env; here we keep a sensible default set.
+app.use('/api/*', cors({
+  origin: (origin) => {
+    const allowed = [
+      'http://localhost:5173',
+      'https://billi-web-staging-6pj.pages.dev',
+    ];
+    if (allowed.includes(origin)) return origin;
+    return null;
+  },
+  allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 
 // Tag every /api/* request with a UUID so logs and 5xx error responses can
 // be correlated without leaking internal error details to the client.

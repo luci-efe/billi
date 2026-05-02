@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { 
+import {
   Plus,
-  Search, 
-  ArrowUpRight, 
+  Search,
+  ArrowUpRight,
   ArrowDownRight,
   Download,
   Filter,
@@ -13,9 +13,9 @@ import {
 import EvidenceUploader from "@/components/EvidenceUploader";
 import EvidenceViewer from "@/components/EvidenceViewer";
 import { useDocuments } from "@/hooks/use-documents";
-import { 
-  Card, 
-  CardContent, 
+import {
+  Card,
+  CardContent,
   CardHeader
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTransactions } from "@/hooks/use-transactions";
+import { useLocation } from "react-router";
 
 function EvidenceCell({ transactionId }: { transactionId: string }) {
   const [open, setOpen] = useState(false);
@@ -83,7 +84,13 @@ function EvidenceCell({ transactionId }: { transactionId: string }) {
   );
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  income: "Ingreso",
+  expense: "Egreso",
+};
+
 export default function Transactions() {
+  const location = useLocation();
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDateFrom, setFilterDateFrom] = useState("");
@@ -110,6 +117,15 @@ export default function Transactions() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Open create dialog if navigated with state flag
+  useEffect(() => {
+    if (location.state?.openCreate) {
+      setIsDialogOpen(true);
+      // Clear the state so it doesn't reopen on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Clear selection when filters change
   useEffect(() => {
@@ -277,12 +293,12 @@ export default function Transactions() {
                     <div className="grid gap-2">
                       <Label htmlFor="type">Tipo</Label>
                       <Select name="type" defaultValue="expense">
-                        <SelectTrigger className="bg-slate-950 border-slate-800">
-                          <SelectValue placeholder="Selecciona" />
+                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-300">
+                          <SelectValue placeholder="Selecciona">{TYPE_LABELS.expense}</SelectValue>
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                          <SelectItem value="income">Ingreso</SelectItem>
-                          <SelectItem value="expense">Egreso</SelectItem>
+                          <SelectItem value="income" className="text-slate-300 focus:bg-slate-800 focus:text-white">Ingreso</SelectItem>
+                          <SelectItem value="expense" className="text-slate-300 focus:bg-slate-800 focus:text-white">Egreso</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -319,11 +335,11 @@ export default function Transactions() {
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <Tabs defaultValue="all" className="w-full md:w-[400px]" onValueChange={setFilterType}>
+              <Tabs value={filterType} onValueChange={setFilterType} className="w-full md:w-[400px]">
                 <TabsList className="bg-slate-950 border border-slate-800">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-slate-800">Todos</TabsTrigger>
-                  <TabsTrigger value="income" className="data-[state=active]:bg-slate-800">Ingresos</TabsTrigger>
-                  <TabsTrigger value="expense" className="data-[state=active]:bg-slate-800">Egresos</TabsTrigger>
+                  <TabsTrigger value="all" className="data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-400 text-slate-300">Todos</TabsTrigger>
+                  <TabsTrigger value="income" className="data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-400 text-slate-300">Ingresos</TabsTrigger>
+                  <TabsTrigger value="expense" className="data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-400 text-slate-300">Egresos</TabsTrigger>
                 </TabsList>
               </Tabs>
               <div className="relative w-full md:w-[300px]">
@@ -342,22 +358,22 @@ export default function Transactions() {
                 <span className="text-sm text-slate-400 font-medium">Filtros:</span>
               </div>
               <Select value={filterCategory} onValueChange={(val) => setFilterCategory(val || "all")}>
-                <SelectTrigger className="w-[180px] bg-slate-950 border-slate-800 h-9">
+                <SelectTrigger className="w-[180px] bg-slate-950 border-slate-800 h-9 text-slate-300">
                   <SelectValue placeholder="Categoría" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  <SelectItem value="Comida">Comida</SelectItem>
-                  <SelectItem value="Transporte">Transporte</SelectItem>
-                  <SelectItem value="Salario">Salario</SelectItem>
-                  <SelectItem value="Renta">Renta</SelectItem>
-                  <SelectItem value="Entretenimiento">Entretenimiento</SelectItem>
-                  <SelectItem value="Otros">Otros</SelectItem>
+                  <SelectItem value="all" className="text-slate-300 focus:bg-slate-800 focus:text-white">Todas las categorías</SelectItem>
+                  <SelectItem value="Comida" className="text-slate-300 focus:bg-slate-800 focus:text-white">Comida</SelectItem>
+                  <SelectItem value="Transporte" className="text-slate-300 focus:bg-slate-800 focus:text-white">Transporte</SelectItem>
+                  <SelectItem value="Salario" className="text-slate-300 focus:bg-slate-800 focus:text-white">Salario</SelectItem>
+                  <SelectItem value="Renta" className="text-slate-300 focus:bg-slate-800 focus:text-white">Renta</SelectItem>
+                  <SelectItem value="Entretenimiento" className="text-slate-300 focus:bg-slate-800 focus:text-white">Entretenimiento</SelectItem>
+                  <SelectItem value="Otros" className="text-slate-300 focus:bg-slate-800 focus:text-white">Otros</SelectItem>
                 </SelectContent>
               </Select>
               <Input 
                 type="date" 
-                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm" 
+                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm text-slate-300" 
                 value={filterDateFrom}
                 onChange={(e) => setFilterDateFrom(e.target.value)}
                 title="Fecha inicio"
@@ -365,7 +381,7 @@ export default function Transactions() {
               <span className="text-slate-500">-</span>
               <Input 
                 type="date" 
-                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm" 
+                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm text-slate-300" 
                 value={filterDateTo}
                 onChange={(e) => setFilterDateTo(e.target.value)}
                 title="Fecha fin"

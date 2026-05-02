@@ -1,11 +1,11 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { useUser, useClerk } from "@clerk/clerk-react";
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  MessageSquare, 
-  Settings, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  Receipt,
+  MessageSquare,
+  Settings,
+  LogOut,
   User,
   PlusCircle,
   PiggyBank
@@ -24,6 +24,7 @@ const navItems = [
 
 export default function RootLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useUser();
   const { signOut } = useClerk();
   const { data: me } = useMe();
@@ -49,10 +50,10 @@ export default function RootLayout() {
                   to={item.href}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-slate-50",
-                    isActive ? "bg-slate-800 text-indigo-400" : "text-slate-400"
+                    isActive ? "bg-slate-800 text-indigo-400" : "text-slate-200"
                   )}
                 >
-                  <item.icon className={cn("h-4 w-4", isActive ? "text-indigo-400" : "text-slate-400")} />
+                  <item.icon className={cn("h-4 w-4", isActive ? "text-indigo-400" : "text-slate-300")} />
                   {item.name}
                 </Link>
               );
@@ -99,7 +100,7 @@ export default function RootLayout() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold" onClick={() => navigate('/transactions', { state: { openCreate: true } })}>
               <PlusCircle className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Nuevo Movimiento</span>
               <span className="sm:hidden">Nuevo</span>
