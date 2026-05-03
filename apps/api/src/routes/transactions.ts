@@ -43,13 +43,13 @@ router.post("/", zValidator("json", newTransactionSchema, (result, c) => {
   const isTest = __BILLI_TEST__;
 
   const id = ulid();
-  // SEC-NEW-07: source is server-controlled. Form route always pins 'form';
-  // chat tool path pins 'chat'. Never trust client-supplied source/sourceRef.
+  // Allow client to specify source (e.g. 'image', 'chat') if provided;
+  // default to 'form' for manual entries.
   // @ts-expect-error - exactOptionalPropertyTypes vs note?: string | null
   const input: NewTransaction & { id: string } = {
     ...body,
     id,
-    source: 'form' as const,
+    source: body.source || 'form',
   };
   
   try {

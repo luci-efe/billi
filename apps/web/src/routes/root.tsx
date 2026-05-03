@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useUser, useClerk, useAuth } from "@clerk/clerk-react";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   Receipt,
@@ -13,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
+import { apiClient } from "@/lib/api-client";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -27,7 +29,19 @@ export default function RootLayout() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { getToken, isSignedIn } = useAuth();
   const { data: me } = useMe();
+
+  // SEC-NEW-11: Sync Clerk token to the apiClient for cross-origin staging/production calls.
+  useEffect(() => {
+    if (isSignedIn) {
+      getToken().then((token) => {
+        apiClient.setAuthToken(token);
+      });
+    } else {
+      apiClient.setAuthToken(null);
+    }
+  }, [isSignedIn, getToken]);
 
   return (
     <div data-testid="root-layout" className="flex min-h-screen w-full bg-slate-950 text-slate-50 antialiased">

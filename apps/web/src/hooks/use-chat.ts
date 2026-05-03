@@ -42,11 +42,9 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      const res = await apiClient.post('/api/ai/chat', {
-        body: JSON.stringify({ 
-          message: content,
-          threadId: threadId || undefined
-        }),
+      const res = await apiClient.post('/api/ai/chat', { 
+        message: content,
+        threadId: threadId || undefined
       });
 
       if (!res.ok) {

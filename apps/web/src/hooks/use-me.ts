@@ -68,9 +68,7 @@ export function useUpdateMe() {
     setIsUpdating(true);
     setError(null);
     try {
-      const res = await apiClient.patch('/api/me', {
-        body: JSON.stringify(values),
-      });
+      const res = await apiClient.patch('/api/me', values);
 
       if (!res.ok) {
         const errorData = await res.json();

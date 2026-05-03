@@ -15,6 +15,8 @@ export function useTransactions(filters?: { from?: number; to?: number; category
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const filterKey = JSON.stringify(filters);
+
   const fetchTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -30,15 +32,17 @@ export function useTransactions(filters?: { from?: number; to?: number; category
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.items || []);
+        setError(null);
       } else {
-        throw new Error('Failed to fetch transactions');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to fetch transactions');
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error'));
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [filterKey]);
 
   useEffect(() => {
     fetchTransactions();
@@ -52,9 +56,7 @@ export function useTransactions(filters?: { from?: number; to?: number; category
     occurredAt: number;
     source: string;
   }) => {
-    const res = await apiClient.post('/api/transactions', {
-      body: JSON.stringify(values),
-    });
+    const res = await apiClient.post('/api/transactions', values);
 
     if (!res.ok) {
       const data = await res.json();
@@ -66,9 +68,7 @@ export function useTransactions(filters?: { from?: number; to?: number; category
   };
 
   const bulkDelete = async (ids: string[]) => {
-    const res = await apiClient.post('/api/transactions/bulk-delete', {
-      body: JSON.stringify({ ids }),
-    });
+    const res = await apiClient.post('/api/transactions/bulk-delete', { ids });
 
     if (!res.ok) {
       const data = await res.json();
@@ -80,9 +80,7 @@ export function useTransactions(filters?: { from?: number; to?: number; category
   };
 
   const bulkUpdateCategory = async (ids: string[], category: string) => {
-    const res = await apiClient.patch('/api/transactions/bulk-category', {
-      body: JSON.stringify({ ids, category }),
-    });
+    const res = await apiClient.patch('/api/transactions/bulk-category', { ids, category });
 
     if (!res.ok) {
       const data = await res.json();
