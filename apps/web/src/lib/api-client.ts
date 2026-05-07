@@ -1,5 +1,10 @@
 const STAGING_API_BASE_URL = 'https://billi-api-staging.eduardo-lalo1999.workers.dev';
 const BILLI_STAGING_PAGES_HOST_RE = /^billi-web-staging(?:-[a-z0-9]+)?\.pages\.dev$/;
+// Custom domains served by Pages whose `/api/*` is NOT bound to the Worker
+// via a zone route. Hitting same-origin would land on the SPA fallback and
+// return index.html. The Worker's CORS allowlist already covers these
+// origins (see apps/api/src/index.ts).
+const BILLI_STAGING_CUSTOM_HOSTS = new Set(['www.billi.lat', 'billi.lat']);
 
 export function resolveApiBaseUrl(
   explicitBaseUrl = import.meta.env.VITE_API_BASE_URL || '',
@@ -12,6 +17,7 @@ export function resolveApiBaseUrl(
     const { hostname } = new URL(locationHref);
     if (hostname === 'localhost' || hostname === '127.0.0.1') return '';
     if (BILLI_STAGING_PAGES_HOST_RE.test(hostname)) return STAGING_API_BASE_URL;
+    if (BILLI_STAGING_CUSTOM_HOSTS.has(hostname)) return STAGING_API_BASE_URL;
   } catch {
     return '';
   }

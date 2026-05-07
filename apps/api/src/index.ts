@@ -21,7 +21,10 @@ type Variables = {
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 const BILLI_STAGING_PAGES_HOST_RE = /^billi-web-staging(?:-[a-z0-9]+)?\.pages\.dev$/;
-const BILLI_STAGING_CUSTOM_ORIGINS = new Set(['https://www.billi.lat']);
+const BILLI_STAGING_CUSTOM_ORIGINS = new Set([
+  'https://www.billi.lat',
+  'https://billi.lat',
+]);
 
 function isAllowedCorsOrigin(origin: string): boolean {
   if (origin === 'http://localhost:5173') return true;
