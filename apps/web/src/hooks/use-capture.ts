@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { apiClient } from '../lib/api-client';
+import { createTransactionFromProposal } from '../lib/transactions';
 
 export interface CaptureProposal {
   amountCents: number;
@@ -91,45 +92,31 @@ export function useCapture() {
     }
   }, []);
 
-  const confirmProposal = useCallback(async (next: CaptureProposal): Promise<{ id: string }> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const parseOccurredAt = (value: string): number => {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-          const [year, month, day] = value.split('-').map(Number);
-          return Math.floor(new Date(year, month - 1, day, 0, 0, 0, 0).getTime() / 1000);
-        }
-
-        const ts = Date.parse(value);
-        return Number.isNaN(ts) ? Math.floor(Date.now() / 1000) : Math.floor(ts / 1000);
-      };
-
-      const body = {
-        type: next.type,
-        amountCents: next.amountCents,
-        category: next.category,
-        note: next.note ?? next.merchant ?? '',
-        occurredAt: parseOccurredAt(next.date),
-        source: lastSource ?? 'text',
-      };
-      const res = await apiClient.post('/api/transactions', body);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({} as { error?: string }));
-        const msg =
-          (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) ||
-          'No pudimos registrar el movimiento.';
+  const confirmProposal = useCallback(
+    async (
+      next: CaptureProposal,
+      sourceOverride?: 'chat' | 'image' | 'text',
+    ): Promise<{ id: string }> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const created = await createTransactionFromProposal(
+          next,
+          sourceOverride ?? lastSource ?? 'text',
+        );
+        // success → clear proposal state
+        reset();
+        return created;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'No pudimos registrar el movimiento.';
         setError(msg);
-        throw new Error(msg);
+        throw err;
+      } finally {
+        setIsLoading(false);
       }
-      const created = (await res.json()) as { id: string };
-      // success → clear proposal state
-      reset();
-      return created;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [lastSource, reset]);
+    },
+    [lastSource, reset],
+  );
 
   return {
     proposal,

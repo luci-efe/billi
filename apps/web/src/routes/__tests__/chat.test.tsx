@@ -8,6 +8,8 @@ const mockClearChat = vi.fn();
 const mockSubmitCapture = vi.fn();
 const mockConfirmProposal = vi.fn();
 const mockResetCapture = vi.fn();
+const mockChatConfirmProposal = vi.fn();
+const mockChatCancelProposal = vi.fn();
 
 vi.mock('@/hooks/use-chat', () => ({
   useChat: () => ({
@@ -22,6 +24,8 @@ vi.mock('@/hooks/use-chat', () => ({
     isLoading: false,
     sendMessage: mockSendMessage,
     clearChat: mockClearChat,
+    confirmProposal: mockChatConfirmProposal,
+    cancelProposal: mockChatCancelProposal,
   }),
 }));
 
@@ -49,24 +53,20 @@ describe('Chat route', () => {
     mockSubmitCapture.mockResolvedValue({ confidence: 0.9, proposal: undefined, error: 'needs review' });
   });
 
-  it('routes the registration suggestion to the capture flow', async () => {
+  it('sends suggested questions through the natural chat flow', async () => {
     render(
       <MemoryRouter>
         <Chat />
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /registra que gasté 200 pesos en gasolina/i }));
+    fireEvent.click(screen.getByRole('button', { name: /¿qué es el sat\?/i }));
 
     await waitFor(() => {
-      expect(mockSubmitCapture).toHaveBeenCalledWith({
-        message: 'Registra que gasté 200 pesos en gasolina',
-        imageUrl: undefined,
-        sourceHint: 'chat',
-      });
+      expect(mockSendMessage).toHaveBeenCalledWith('¿Qué es el SAT?');
     });
 
-    expect(mockSendMessage).not.toHaveBeenCalled();
+    expect(mockSubmitCapture).not.toHaveBeenCalled();
   });
 
   it('confirma antes de borrar la conversación', async () => {

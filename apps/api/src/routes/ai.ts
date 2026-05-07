@@ -80,12 +80,30 @@ router.post('/chat', async (c) => {
       return c.json({ error: 'ai_error', message }, 500);
     }
 
-    const out = (result as { result: { intent: string; text: string; sources?: string[] } }).result;
+    const out = (result as {
+      result: {
+        intent: string;
+        text: string;
+        sources?: string[];
+        proposal?: {
+          amountCents: number;
+          category: string;
+          type: 'income' | 'expense';
+          date: string;
+          merchant?: string;
+        };
+        confidence?: number;
+        lowConfidenceFields?: string[];
+      };
+    }).result;
 
     return c.json({
       text: out.text,
       intent: out.intent,
       sources: out.sources,
+      proposal: out.proposal,
+      confidence: out.confidence,
+      lowConfidenceFields: out.lowConfidenceFields,
       threadId: null,
     });
   } catch (err) {

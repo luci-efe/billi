@@ -33,16 +33,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCapture } from "@/hooks/use-capture";
 import CaptureProposalReview from "@/components/CaptureProposalReview";
+import { ProposalFormCard } from "@/components/ProposalFormCard";
 import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
 
-const suggestedQuestions = [
-  { label: "¿Cuánto gasté en comida este mes?", action: "chat" as const },
-  { label: "Registra que gasté 200 pesos en gasolina", action: "capture" as const },
-  { label: "¿Qué es el SAT?", action: "chat" as const },
-  { label: "¿Cómo leo mi recibo de nómina?", action: "chat" as const },
-  { label: "¿Qué es el CAT en una tarjeta de crédito?", action: "chat" as const },
-  { label: "¿Cómo invierto en CETES?", action: "chat" as const },
+const suggestedQuestions: ReadonlyArray<{ label: string }> = [
+  { label: "¿Cuánto gasté en comida este mes?" },
+  { label: "¿Qué es el SAT?" },
+  { label: "¿Cómo leo mi recibo de nómina?" },
+  { label: "¿Qué es el CAT en una tarjeta de crédito?" },
+  { label: "¿Cómo invierto en CETES?" },
 ];
 
 function formatSourceLabel(source: string): string {
@@ -66,7 +66,7 @@ function isNearBottom(element: HTMLElement, threshold: number = 48): boolean {
 }
 
 export default function Chat() {
-  const { messages, isLoading, sendMessage, clearChat } = useChat();
+  const { messages, isLoading, sendMessage, clearChat, confirmProposal, cancelProposal } = useChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -201,12 +201,7 @@ export default function Chat() {
     e.target.value = "";
   };
 
-  const handleSuggestedQuestion = async (question: string, action: "chat" | "capture") => {
-    if (action === "capture") {
-      setInput(question);
-      await handleOpenCapture(question);
-      return;
-    }
+  const handleSuggestedQuestion = async (question: string) => {
     setInput("");
     await sendMessage(question);
   };
@@ -295,6 +290,32 @@ export default function Chat() {
                             {formatSourceLabel(src)}
                           </span>
                         ))}
+                      </div>
+                    )}
+                    {message.role === "assistant" && message.proposal && message.proposalStatus === "pending" && (
+                      <ProposalFormCard
+                        proposal={message.proposal}
+                        confidence={message.confidence}
+                        lowConfidenceFields={message.lowConfidenceFields ?? []}
+                        variant="inline"
+                        onConfirm={(edited) => void confirmProposal(message.id, edited)}
+                        onCancel={() => cancelProposal(message.id)}
+                      />
+                    )}
+                    {message.role === "assistant" && message.proposal && message.proposalStatus === "confirmed" && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 self-start rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Registrado
+                      </div>
+                    )}
+                    {message.role === "assistant" && message.proposal && message.proposalStatus === "cancelled" && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 self-start rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        Cancelado
+                      </div>
+                    )}
+                    {message.role === "assistant" && message.proposal && message.proposalStatus === "error" && (
+                      <div className="mt-2 self-start rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[11px] text-rose-700 dark:text-rose-300">
+                        No pudimos registrar el movimiento. Inténtalo de nuevo desde el chat.
                       </div>
                     )}
                   </div>
@@ -421,7 +442,7 @@ export default function Chat() {
                 <button
                   key={item.label}
                   disabled={isBusy}
-                  onClick={() => void handleSuggestedQuestion(item.label, item.action)}
+                  onClick={() => void handleSuggestedQuestion(item.label)}
                   className="flex w-full items-center justify-between rounded-lg border border-border bg-background/60 p-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
                 >
                   {item.label}
