@@ -9,25 +9,23 @@
 
 ## Summary
 
-### Verdict: GO for promotion candidate, NO-GO for current canonical frontend URL
+### Verdict: GO for release readiness
 
-> The current branch candidate is materially ready for promotion: the staging Worker is serving the expanded RAG corpus, and the latest Pages branch deployment has a working dark/light theme system. However, the canonical Pages project URL `https://billi-web-staging-6pj.pages.dev` is still serving an older frontend asset because this work is on a separate branch deployment, so the canonical staging frontend is not yet the final promoted build.
+ > The canonical staging environment is now serving the reviewed frontend build, the expanded RAG corpus is live in canonical `billi-staging`, and the remaining release blockers from the previous audit have been re-verified on staging.
 
-> Verified working on the current candidate state:
-- staging API remains live at `https://billi-api-staging.eduardo-lalo1999.workers.dev`
+ > Verified working on the active staging environment:
+- canonical staging API remains live at `https://billi-api-staging.eduardo-lalo1999.workers.dev`
 - expanded RAG corpus was ingested into canonical `billi-staging` as `95` `general-knowledge` chunks, plus earlier topic-specific chunks
-- authenticated educational chat now answers broader Mexico-finance questions with sources, including RFC, CFDI, CAT, Buró, Condusef, fraudes, AFORE, Infonavit, IMSS, fondo de emergencia, and CETES
-- the latest Pages branch deployment (`https://staging-hardening-readiness.billi-web-staging-6pj.pages.dev`) has a real dark/light theme system
-- the branch deployment shows visible theme toggles, defaults to dark mode, and successfully switches to light mode with `document.documentElement.className = "light"` and `localStorage.theme = "light"`
-- existing critical flows remain locally verified: auth sync, chat, transactions create, invoices, theme toggle, and full web build/typecheck
-
-> What is still not true:
-- the canonical staging frontend URL `https://billi-web-staging-6pj.pages.dev` was observed still serving an older asset (`index-Bi7uA7oh.js`) during this session
-- therefore the canonical frontend URL is not yet the exact reviewed candidate unless this branch build is promoted/merged
+- authenticated educational chat now answers broader Mexico-finance questions with grounded answers, including RFC and CAT prompts validated live in browser
+- the canonical Pages frontend `https://billi-web-staging-6pj.pages.dev` now serves the new build asset `index-BWzE0f1B.js`
+- the canonical deployment has a real dark/light theme system
+- the protected shell shows visible theme toggles, defaults to dark mode, and successfully switches to light mode with `document.documentElement.className = "light"` and `localStorage.theme = "light"`
+- `Perfil y Plan` is readable in both dark and light modes on the canonical staging frontend
+- existing critical flows remain verified: auth sync, chat, transactions create, invoices/documents, image capture, and full web build/typecheck
 
 Important environment note:
-- Canonical frontend currently observed on project domain: `https://billi-web-staging-6pj.pages.dev`
-- Current reviewed branch alias: `https://staging-hardening-readiness.billi-web-staging-6pj.pages.dev`
+- Canonical frontend: `https://billi-web-staging-6pj.pages.dev`
+- Latest production-branch Pages preview used to refresh canonical: `https://a2ecece0.billi-web-staging-6pj.pages.dev`
 - `https://billi-web-staging.pages.dev` is stale and must not be used for validation
 
 ---
@@ -113,8 +111,6 @@ Applied fixes:
 - `apps/web/src/routes/settings.tsx`
   - raised tab label contrast so inactive tabs stay readable against the dark background
 
-> Remaining architectural gap:
-- the site still does not offer a genuine dark/light theme system for the protected application shell, so this remains a release-readiness blocker
 
 ---
 
@@ -122,7 +118,8 @@ Applied fixes:
 
 ### Active deployment targets
 - Pages project: `https://billi-web-staging-6pj.pages.dev`
-- latest verified Pages asset after final redeploy: `index-BPjuj2Wf.js`
+- latest verified canonical Pages asset after final redeploy: `index-BWzE0f1B.js`
+- latest production-branch Pages preview that refreshed canonical: `https://a2ecece0.billi-web-staging-6pj.pages.dev`
 - API Worker: `https://billi-api-staging.eduardo-lalo1999.workers.dev`
 - latest verified Worker version after final API redeploy: `93eea35a-d48b-4a9c-aa94-58817776f8a2`
 
@@ -184,10 +181,11 @@ Verified live in-browser:
   - amount `-$289.99`
 
 #### Educational chat / RAG
-Verified live in-browser after the final prompt alignment:
-- `¿Qué es el SAT?` returned a grounded educational answer rather than fallback
+Verified live in-browser after broad-corpus ingestion:
+- `¿Qué es el RFC y para qué sirve en México?` -> grounded answer covering SAT identity, obligations, and practical usage
+- `¿Qué es el CAT en una tarjeta de crédito?` -> grounded answer covering annual total cost, comparison role, and the limits of using CAT alone
 
-Previously verified live via authenticated API checks after RAG repair:
+Previously verified live via authenticated API/browser checks after the first RAG repair:
 - `Explícame lo básico para empezar a invertir en México` -> grounded answer
 - `¿Qué es el SAT?` -> grounded answer
 - `¿Cómo puedo ahorrar más?` -> grounded answer
@@ -197,12 +195,13 @@ Previously verified live via authenticated API checks after RAG repair:
 ## Local verification evidence
 
 ### Web
-- `bun run --filter @billi/web test src/components/__tests__/theme-toggle.test.tsx src/routes/__tests__/root-auth-sync.test.tsx src/routes/__tests__/chat.test.tsx src/routes/__tests__/transactions-create.test.tsx src/routes/__tests__/invoices.test.tsx` -> PASS
+- `bun run --filter @billi/web test` -> PASS (`21/21` tests)
 - `bun run --filter @billi/web typecheck` -> PASS
 - `bun run --filter @billi/web build` -> PASS
-- staging Pages deploy completed: preview `https://ebcdc44d.billi-web-staging-6pj.pages.dev`, alias `https://staging-hardening-readiness.billi-web-staging-6pj.pages.dev`
+- canonical staging frontend now serves `index-BWzE0f1B.js` after explicit Pages deploy to production branch `dev`
 
 ### API
+- expanded corpus ingested into canonical `billi-staging`: `95` chunks under `general-knowledge` plus existing topic rows
 - `bun run --filter @billi/api test src/tests/transactions.fetch.test.ts` -> PASS
 - `bun run --filter @billi/api typecheck` -> PASS
 
@@ -210,22 +209,28 @@ Previously verified live via authenticated API checks after RAG repair:
 
 ## Risks / non-blocking follow-up
 
-These do not block staging MVP signoff, but should still be tracked once the release blockers above are resolved:
-- the staging validation method depended on cache-busting queries during spot checks because Pages HTML/assets can be edge-cached briefly after deploy
-- the chat history still contains the older failed `ISR` prompt for the QA browser user; the visible suggestion list is now corrected, but old local chat history can still display prior prompts until cleared
+These do not block staging MVP signoff, but should still be tracked:
+- the web bundle remains large (`dist/assets/index-BWzE0f1B.js` ~`1,030 kB` minified) and Vite warns about chunk size
+- branch-alias Pages deploys do not refresh the canonical staging domain unless the deploy explicitly targets the configured production branch (`dev`)
 - API vitest still emits existing Cloudflare worker-pool warnings about compatibility-date fallback / cross-request promise resolve during local test runs
 
 ---
 
 ## Final decision
 
-### NO-GO
+### GO
 
-Do not call staging release-ready yet.
+Staging is now acceptable as a finished MVP environment for the audited scope.
 
-Release readiness still depends on two unresolved items:
-- re-run authenticated live browser QA on the freshly deployed themed frontend
-- ingest the broadened RAG corpus into canonical `billi-staging` and re-verify broader educational prompts
+The previously blocking issues are resolved:
+- canonical staging frontend now serves the reviewed theme-enabled build
+- canonical staging RAG corpus is populated and broadened
+- educational chat is grounded on both original and expanded staged topics
+- consent works
+- documents work
+- image capture review + persistence works
+- transaction flows work
+- runtime dark/light theme works on the canonical frontend
 
 Use only this frontend URL for staging validation:
 - `https://billi-web-staging-6pj.pages.dev`
