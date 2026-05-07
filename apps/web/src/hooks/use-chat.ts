@@ -6,6 +6,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  sources?: string[];
 }
 const CHAT_MESSAGES_STORAGE_KEY = 'billi_chat_messages';
 const CHAT_THREAD_STORAGE_KEY = 'billi_chat_thread_id';
@@ -19,12 +20,13 @@ function makeAssistantGreeting(): Message {
   };
 }
 
-function makeMessage(role: Message['role'], content: string): Message {
+function makeMessage(role: Message['role'], content: string, sources?: string[]): Message {
   return {
     id: crypto.randomUUID(),
     role,
     content,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    ...(sources && sources.length > 0 ? { sources } : {}),
   };
 }
 
@@ -79,7 +81,7 @@ export function useChat() {
         localStorage.setItem(CHAT_THREAD_STORAGE_KEY, data.threadId);
       }
 
-      const assistantMessage = makeMessage('assistant', data.text);
+      const assistantMessage = makeMessage('assistant', data.text, Array.isArray(data.sources) ? data.sources : undefined);
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
       const errorMessage = makeMessage(
