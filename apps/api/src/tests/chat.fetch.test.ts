@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/vitest-pool-workers" />
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { SELF } from 'cloudflare:test';
+import { z } from 'zod';
 import {
   activateFetchMock,
   deactivateFetchMock,
@@ -9,6 +10,19 @@ import {
   mockEmbedding,
   resetTestData,
 } from './setup';
+import { captureOutputSchema } from '../mastra/workflows/capture-shared';
+
+// Mirror of the workflow's chatbotOutputSchema (kept private inside chatbot.ts).
+// We re-declare it here to validate that an `add_transaction` payload conforms
+// to the extended chat output contract without exporting workflow internals.
+const chatbotOutputSchema = z.object({
+  intent: z.string(),
+  text: z.string(),
+  sources: z.array(z.string()).optional(),
+  proposal: captureOutputSchema.shape.proposal,
+  confidence: z.number().optional(),
+  lowConfidenceFields: z.array(z.string()).optional(),
+});
 
 // HTTP integration tests for `/api/ai/chat`. Run inside the Workers pool.
 //
@@ -121,6 +135,80 @@ describe('POST /api/ai/chat', () => {
     expect(body.intent).toBe('personal_history');
     expect(body.text).toContain('Tus egresos en comida de este mes suman');
     expect(body.text).toMatch(/\$\s?0\.00/);
+  });
+
+  it('schema accepts an add_transaction payload with proposal + confidence', () => {
+    const payload = {
+      intent: 'add_transaction',
+      text: 'Preparé este movimiento para que lo confirmes. Edita los campos si algo no encaja.',
+      proposal: {
+        amountCents: 20000,
+        category: 'Transporte',
+        type: 'expense' as const,
+        date: '2026-05-06',
+      },
+      confidence: 0.9,
+    };
+    const parsed = chatbotOutputSchema.safeParse(payload);
+    expect(parsed.success).toBe(true);
+  });
+
+  it('routes "gasté 200 en gasolina" to the capture step and surfaces the proposal', async () => {
+    // 1) guardrail            -> not injection
+    mockChatJSON({ injection: false, reason: '' });
+    // 2) classify             -> add_transaction
+    mockChatJSON({ intent: 'add_transaction', confidence: 0.95 });
+    // 3) captureStep          -> structured extraction
+    mockChatJSON({
+      amountCents: 20000,
+      category: 'Transporte',
+      type: 'expense',
+      date: '2026-05-06',
+      merchant: null,
+      confidence: 0.9,
+      lowConfidenceFields: null,
+      error: null,
+    });
+
+    const res = await SELF.fetch('http://example.com/api/ai/chat', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer user_test',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ message: 'gasté 200 en gasolina' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      intent: string;
+      text: string;
+      proposal?: { amountCents: number; type: string; category: string; date: string };
+      confidence?: number;
+    };
+    expect(body.intent).toBe('add_transaction');
+    expect(body.proposal?.amountCents).toBe(20000);
+    expect(body.proposal?.type).toBe('expense');
+    expect(body.proposal?.category).toBe('Transporte');
+    expect(body.confidence).toBe(0.9);
+  });
+
+  it('regression: "¿cuánto gasté hoy?" still routes to personal_history', async () => {
+    mockChatJSON({ injection: false, reason: '' });
+    mockChatJSON({ intent: 'personal_history', confidence: 0.9 });
+
+    const res = await SELF.fetch('http://example.com/api/ai/chat', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer user_test',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ message: '¿cuánto gasté hoy?' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { intent: string; proposal?: unknown };
+    expect(body.intent).toBe('personal_history');
+    expect(body.intent).not.toBe('add_transaction');
+    expect(body.proposal).toBeUndefined();
   });
 
   it('flags injection even without the regex via the LLM guardrail', async () => {

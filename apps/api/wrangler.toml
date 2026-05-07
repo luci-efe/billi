@@ -77,8 +77,16 @@ enabled = true
 
 [env.staging]
 name = "billi-api-staging"
-workers_dev = true            # reach via https://billi-api-staging.<subdomain>.workers.dev
-# Route stanza intentionally omitted; *.workers.dev URL is enough for staging.
+workers_dev = true            # also reachable via https://billi-api-staging.<subdomain>.workers.dev
+# Bind /api/* on the staging custom domain to this Worker so the SPA at
+# www.billi.lat can hit the BFF same-origin (no CORS preflight). Apex
+# billi.lat included defensively in case DNS/Pages later serves it too.
+[[env.staging.routes]]
+pattern = "www.billi.lat/api/*"
+zone_name = "billi.lat"
+[[env.staging.routes]]
+pattern = "billi.lat/api/*"
+zone_name = "billi.lat"
 # Secrets are set once per env:
 #   wrangler secret put CLERK_SECRET_KEY     --env staging
 #   wrangler secret put TURSO_DATABASE_URL   --env staging

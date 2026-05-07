@@ -3,6 +3,14 @@ import { chatJSON, embedText } from '../../lib/openrouter';
 import { retrieveTopK } from '@billi/db/repos/rag';
 import { getSummary, listTransactions } from '@billi/db/repos/transactions';
 import type { DB } from '../../db';
+import {
+  captureOutputSchema,
+  extractionLLMSchema,
+  NL_SYSTEM_PROMPT,
+  GENERIC_PARSE_ERROR,
+  buildResult,
+  type RawExtraction,
+} from './capture-shared';
 
 const FALLBACK_MESSAGE =
   'No encontré información específica en mi base de conocimientos. ¿Te gustaría preguntar algo más?';
@@ -26,7 +34,7 @@ function escapeFence(s: string): string {
   return s.replace(/</g, '\u2039').replace(/>/g, '\u203a');
 }
 
-const intentEnum = z.enum(['educational', 'personal_history', 'general', 'ambiguous']);
+const intentEnum = z.enum(['educational', 'personal_history', 'add_transaction', 'general', 'ambiguous']);
 
 const chatbotStateSchema = z.object({
   intent: intentEnum.optional(),
@@ -38,6 +46,9 @@ const chatbotOutputSchema = z.object({
   intent: z.string(),
   text: z.string(),
   sources: z.array(z.string()).optional(),
+  proposal: captureOutputSchema.shape.proposal,
+  confidence: z.number().optional(),
+  lowConfidenceFields: z.array(z.string()).optional(),
 });
 
 const guardrailInputSchema = z.object({ message: z.string() });
@@ -90,6 +101,7 @@ const finalInputSchema = z.object({
     })
     .nullable()
     .optional(),
+  capture: captureOutputSchema.nullable().optional(),
 });
 
 const workflowInputSchema = z.object({ message: z.string() });
@@ -110,7 +122,7 @@ const classifyLLMSchema = {
   properties: {
     intent: {
       type: 'string',
-      enum: ['educational', 'personal_history', 'general', 'ambiguous'],
+      enum: ['educational', 'personal_history', 'add_transaction', 'general', 'ambiguous'],
     },
     confidence: { type: 'number' },
   },
@@ -331,9 +343,10 @@ export async function buildChatbotWorkflow() {
           }>({
             apiKey,
             model,
-            system: `Clasifica la intención del mensaje del usuario en una de cuatro categorías:
+            system: `Clasifica la intención del mensaje del usuario en una de cinco categorías:
 - "educational": preguntas conceptuales sobre impuestos, SAT, RESICO, deducciones, finanzas personales generales.
-- "personal_history": preguntas sobre las transacciones, balance, ingresos o egresos del propio usuario (ej. "¿cuánto gasté hoy?", "muéstrame mis últimas transacciones").
+- "personal_history": preguntas sobre las transacciones, balance, ingresos o egresos del usuario (ej. "¿cuánto gasté hoy?", "muéstrame mis últimas transacciones"). NUNCA es para registrar uno nuevo.
+- "add_transaction": el usuario quiere REGISTRAR un movimiento nuevo. Verbos imperativos ("registra", "anota", "guarda", "agrega", "apunta") o frases declarativas que afirman un gasto/ingreso ya ocurrido con monto explícito ("gasté 200 en gasolina", "pagué 500 de luz", "me pagaron 5000 de nómina", "cobré 1200", "ingresé 800"). DISTINCIÓN: "¿cuánto gasté?" → personal_history; "gasté 200 en X" → add_transaction.
 - "ambiguous": menciona impuestos pero no queda claro si es teoría o caso personal.
 - "general": saludos, charla casual o cualquier otra cosa.
 Devuelve el JSON estricto.`,
@@ -535,6 +548,36 @@ Responde estrictamente en JSON.`,
     },
   });
 
+  const captureStep = createStep({
+    id: 'capture',
+    inputSchema: z.object({ message: z.string() }),
+    outputSchema: captureOutputSchema,
+    execute: async ({ inputData, requestContext }) => {
+      const { message } = inputData;
+      const apiKey = requestContext?.get('openRouterApiKey') as string | undefined;
+      const model =
+        (requestContext?.get('BILLI_LLM_MODEL') as string | undefined) ?? DEFAULT_LLM_MODEL;
+
+      if (!apiKey || apiKey === 'mock_key') {
+        return { confidence: 0, error: GENERIC_PARSE_ERROR };
+      }
+
+      try {
+        const raw = await chatJSON<RawExtraction>({
+          apiKey,
+          model,
+          system: NL_SYSTEM_PROMPT,
+          user: `<usuario>${escapeFence(message)}</usuario>`,
+          schema: { name: 'capture_extraction', schema: extractionLLMSchema },
+        });
+        return buildResult(raw);
+      } catch (err) {
+        console.error('chatbotWorkflow capture error:', err);
+        return { confidence: 0, error: GENERIC_PARSE_ERROR };
+      }
+    },
+  });
+
   const clarifyStep = createStep({
     id: 'clarify',
     inputSchema: clarifyInputSchema,
@@ -574,6 +617,20 @@ Responde estrictamente en JSON.`,
 
       if (intent === 'personal_history' && inputData.history) {
         return { intent, text: stripIfLeak(inputData.history.text) };
+      }
+
+      if (intent === 'add_transaction' && inputData.capture) {
+        const cap = inputData.capture;
+        if (cap.proposal && cap.confidence > 0) {
+          return {
+            intent,
+            text: 'Preparé este movimiento para que lo confirmes. Edita los campos si algo no encaja.',
+            proposal: cap.proposal,
+            confidence: cap.confidence,
+            ...(cap.lowConfidenceFields ? { lowConfidenceFields: cap.lowConfidenceFields } : {}),
+          };
+        }
+        return { intent, text: cap.error ?? GENERIC_PARSE_ERROR };
       }
 
       if (intent === 'ambiguous') {
@@ -619,6 +676,7 @@ Responde estrictamente en JSON.`,
         async ({ inputData }) => inputData.intent === 'personal_history',
         historyStep,
       ],
+      [async ({ inputData }) => inputData.intent === 'add_transaction', captureStep],
       [async ({ inputData }) => inputData.intent === 'ambiguous', clarifyStep],
     ])
     .map(async ({ getStepResult }) => {
@@ -627,6 +685,7 @@ Responde estrictamente en JSON.`,
         rag: getStepResult(ragStep),
         history: getStepResult(historyStep),
         clarify: getStepResult(clarifyStep),
+        capture: getStepResult(captureStep),
       };
     })
     .then(finalStep)
