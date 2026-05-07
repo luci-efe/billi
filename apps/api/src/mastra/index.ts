@@ -37,7 +37,7 @@ export function getMastra(env: Env): Promise<Mastra> {
       import('./workflows/capture'),
     ]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const storage: any = useInMemoryStorage
       ? new (storageMod as any).InMemoryStore()
       : new (libsqlMod as any).LibSQLStore({
@@ -45,6 +45,7 @@ export function getMastra(env: Env): Promise<Mastra> {
           url: env.TURSO_DATABASE_URL,
           ...(env.TURSO_AUTH_TOKEN ? { authToken: env.TURSO_AUTH_TOKEN } : {}),
         });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const [billiAgent, chatbot, capture] = await Promise.all([
       getBilliAgent(env),

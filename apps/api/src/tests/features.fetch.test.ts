@@ -41,6 +41,21 @@ describe('Billi Feature Set Integration', () => {
       expect(res.headers.get('access-control-allow-credentials')).toBe('true');
       expect(res.headers.get('access-control-allow-headers')).toContain('Authorization');
     });
+
+    it('allows the custom staging domain origin', async () => {
+      const res = await SELF.fetch('http://example.com/api/me', {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'https://www.billi.lat',
+          'Access-Control-Request-Method': 'GET',
+        },
+      });
+
+      expect(res.status).toBe(204);
+      expect(res.headers.get('access-control-allow-origin')).toBe('https://www.billi.lat');
+      expect(res.headers.get('access-control-allow-credentials')).toBe('true');
+      expect(res.headers.get('access-control-allow-headers')).toContain('Authorization');
+    });
   });
   describe('User Profile & Consent (/api/me)', () => {
     it('GET /api/me upserts a new user and returns default profile', async () => {

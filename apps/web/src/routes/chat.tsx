@@ -38,10 +38,20 @@ import { toast } from "sonner";
 
 const suggestedQuestions = [
   { label: "¿Cuánto gasté en comida este mes?", action: "chat" as const },
-  { label: "¿Cómo puedo ahorrar más?", action: "chat" as const },
-  { label: "¿Qué es el SAT?", action: "chat" as const },
   { label: "Registra que gasté 200 pesos en gasolina", action: "capture" as const },
+  { label: "¿Qué es el SAT?", action: "chat" as const },
+  { label: "¿Cómo leo mi recibo de nómina?", action: "chat" as const },
+  { label: "¿Qué es el CAT en una tarjeta de crédito?", action: "chat" as const },
+  { label: "¿Cómo invierto en CETES?", action: "chat" as const },
 ];
+
+function formatSourceLabel(source: string): string {
+  const base = source.split(/[\\/]/).pop() ?? source;
+  const stem = base.replace(/\.(md|txt)$/i, "");
+  const spaced = stem.replace(/-/g, " ").trim();
+  if (!spaced) return stem;
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 const MAX_CAPTURE_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -274,6 +284,19 @@ export default function Chat() {
                       {isTransactionSuccess && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />}
                       <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
                     </div>
+                    {message.role === "assistant" && message.sources && message.sources.length > 0 && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Fuentes:</span>
+                        {Array.from(new Set(message.sources)).map((src) => (
+                          <span
+                            key={src}
+                            className="rounded-full border border-border bg-background/60 px-2 py-0.5 text-[10px] text-muted-foreground"
+                          >
+                            {formatSourceLabel(src)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}

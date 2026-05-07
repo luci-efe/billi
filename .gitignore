@@ -86,6 +86,16 @@ bun.lockb
 # Playwright MCP scratch
 .playwright-mcp/
 
+# Headed browser validation cookies + per-run report (tests/browser/rag-validation.mjs)
+tests/browser/.auth.json
+tests/browser/rag-validation-report.json
+
+# QA scratch screenshots (per-machine)
+artifacts/
+
+# Teammate-supplied datasets (large CSVs, not source of truth)
+data_shared_by_teammates/
+
 # Claude Code scheduler lock
 .claude/scheduled_tasks.lock
 .mastra
