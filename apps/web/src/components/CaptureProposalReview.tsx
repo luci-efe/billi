@@ -88,32 +88,32 @@ export function CaptureProposalReview({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 sm:max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Revisar movimiento</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Confirma o ajusta los datos antes de guardar.
           </DialogDescription>
         </DialogHeader>
 
         {!draft ? (
-          <p className="text-sm text-slate-400">No hay propuesta que revisar.</p>
+          <p className="text-sm text-muted-foreground">No hay propuesta que revisar.</p>
         ) : (
           <div className="grid gap-3 py-2" data-testid="capture-proposal-form">
             {lowConfidenceWarning && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-300">
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
                 Confianza baja ({confidence !== null ? Math.round(confidence * 100) : 0}%).
                 Revisa los campos resaltados.
               </div>
             )}
             {error && (
-              <div className="rounded-md border border-rose-500/40 bg-rose-500/10 p-2 text-xs text-rose-300">
+              <div className="rounded-md border border-rose-500/40 bg-rose-500/10 p-2 text-xs text-rose-700 dark:text-rose-300">
                 {error}
               </div>
             )}
 
             <div className="grid gap-1.5">
-              <Label htmlFor="cp-amount" className={cn(isLowConfidence('amountCents', lowConfidenceFields) && 'text-amber-400')}>
+              <Label htmlFor="cp-amount" className={cn(isLowConfidence('amountCents', lowConfidenceFields) && 'text-amber-700 dark:text-amber-400')}>
                 Monto (MXN)
               </Label>
               <Input
@@ -125,7 +125,7 @@ export function CaptureProposalReview({
                   setDraft({ ...draft, amountCents: parseAmountInput(e.target.value) })
                 }
                 className={cn(
-                  'bg-slate-950 border-slate-800',
+                  'border-border bg-background',
                   isLowConfidence('amountCents', lowConfidenceFields) && 'border-amber-500',
                 )}
               />
@@ -133,7 +133,7 @@ export function CaptureProposalReview({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label htmlFor="cp-type" className={cn(isLowConfidence('type', lowConfidenceFields) && 'text-amber-400')}>
+                <Label htmlFor="cp-type" className={cn(isLowConfidence('type', lowConfidenceFields) && 'text-amber-700 dark:text-amber-400')}>
                   Tipo
                 </Label>
                 <Select
@@ -143,13 +143,13 @@ export function CaptureProposalReview({
                   <SelectTrigger
                     id="cp-type"
                     className={cn(
-                      'bg-slate-950 border-slate-800',
+                      'border-border bg-background',
                       isLowConfidence('type', lowConfidenceFields) && 'border-amber-500',
                     )}
                   >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                  <SelectContent>
                     <SelectItem value="income">Ingreso</SelectItem>
                     <SelectItem value="expense">Egreso</SelectItem>
                   </SelectContent>
@@ -157,7 +157,7 @@ export function CaptureProposalReview({
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="cp-category" className={cn(isLowConfidence('category', lowConfidenceFields) && 'text-amber-400')}>
+                <Label htmlFor="cp-category" className={cn(isLowConfidence('category', lowConfidenceFields) && 'text-amber-700 dark:text-amber-400')}>
                   Categoría
                 </Label>
                 <Select
@@ -167,13 +167,13 @@ export function CaptureProposalReview({
                   <SelectTrigger
                     id="cp-category"
                     className={cn(
-                      'bg-slate-950 border-slate-800',
+                      'border-border bg-background',
                       isLowConfidence('category', lowConfidenceFields) && 'border-amber-500',
                     )}
                   >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                  <SelectContent>
                     {CATEGORIES.map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
@@ -183,7 +183,7 @@ export function CaptureProposalReview({
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="cp-date" className={cn(isLowConfidence('date', lowConfidenceFields) && 'text-amber-400')}>
+              <Label htmlFor="cp-date" className={cn(isLowConfidence('date', lowConfidenceFields) && 'text-amber-700 dark:text-amber-400')}>
                 Fecha
               </Label>
               <Input
@@ -192,14 +192,14 @@ export function CaptureProposalReview({
                 value={draft.date || todayISO()}
                 onChange={(e) => setDraft({ ...draft, date: e.target.value })}
                 className={cn(
-                  'bg-slate-950 border-slate-800',
+                  'border-border bg-background',
                   isLowConfidence('date', lowConfidenceFields) && 'border-amber-500',
                 )}
               />
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="cp-merchant" className={cn(isLowConfidence('merchant', lowConfidenceFields) && 'text-amber-400')}>
+              <Label htmlFor="cp-merchant" className={cn(isLowConfidence('merchant', lowConfidenceFields) && 'text-amber-700 dark:text-amber-400')}>
                 Comercio
               </Label>
               <Input
@@ -208,7 +208,7 @@ export function CaptureProposalReview({
                 onChange={(e) => setDraft({ ...draft, merchant: e.target.value })}
                 placeholder="Opcional"
                 className={cn(
-                  'bg-slate-950 border-slate-800',
+                  'border-border bg-background',
                   isLowConfidence('merchant', lowConfidenceFields) && 'border-amber-500',
                 )}
               />
@@ -221,7 +221,7 @@ export function CaptureProposalReview({
                 value={draft.note ?? ''}
                 onChange={(e) => setDraft({ ...draft, note: e.target.value })}
                 placeholder="Detalle adicional"
-                className="bg-slate-950 border-slate-800"
+                className="border-border bg-background"
               />
             </div>
           </div>

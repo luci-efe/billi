@@ -62,16 +62,16 @@ function EvidenceCell({ transactionId }: { transactionId: string }) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-slate-500 hover:text-white"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
           aria-label="Comprobantes"
         >
           <Paperclip className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 sm:max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Comprobantes</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription>
             Sube imágenes o PDFs (máx. 5MB) ligados a este movimiento.
           </DialogDescription>
         </DialogHeader>
@@ -251,18 +251,18 @@ export default function Transactions() {
   };
 
   if (isLoading && transactions.length === 0) {
-    return <div className="flex items-center justify-center h-full text-slate-400">Cargando transacciones...</div>;
+    return <div className="flex items-center justify-center h-full text-muted-foreground">Cargando transacciones...</div>;
   }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-white">Transacciones</h2>
-          <p className="text-slate-400">Administra y revisa todos tus movimientos financieros.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Transacciones</h2>
+          <p className="text-muted-foreground">Administra y revisa todos tus movimientos financieros.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300" onClick={handleExportCSV}>
+          <Button variant="outline" onClick={handleExportCSV}>
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
@@ -280,33 +280,33 @@ export default function Transactions() {
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Movimiento
             </Button>
-            <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+            <DialogContent>
               <form onSubmit={handleAddTransaction}>
                 <DialogHeader>
                   <DialogTitle>Registrar Movimiento</DialogTitle>
-                  <DialogDescription className="text-slate-400">
+                  <DialogDescription>
                     Ingresa los detalles de tu nuevo ingreso o egreso.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="title">Concepto</Label>
-                    <Input id="title" name="title" placeholder="Ej. Cena con amigos" className="bg-slate-950 border-slate-800" required />
+                    <Input id="title" name="title" placeholder="Ej. Cena con amigos" required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="amount">Monto (MXN)</Label>
-                      <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" className="bg-slate-950 border-slate-800" required />
+                      <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="type">Tipo</Label>
                       <Select value={newTransactionType} onValueChange={(value) => setNewTransactionType(value as 'income' | 'expense')}>
-                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-300">
+                        <SelectTrigger>
                           <SelectValue placeholder="Selecciona">{TYPE_LABELS[newTransactionType]}</SelectValue>
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                          <SelectItem value="income" className="text-slate-300 focus:bg-slate-800 focus:text-white">Ingreso</SelectItem>
-                          <SelectItem value="expense" className="text-slate-300 focus:bg-slate-800 focus:text-white">Egreso</SelectItem>
+                        <SelectContent>
+                          <SelectItem value="income">Ingreso</SelectItem>
+                          <SelectItem value="expense">Egreso</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -314,10 +314,10 @@ export default function Transactions() {
                   <div className="grid gap-2">
                     <Label htmlFor="category">Categoría</Label>
                     <Select value={newTransactionCategory} onValueChange={(value) => setNewTransactionCategory(value ?? 'Otros')}>
-                      <SelectTrigger className="bg-slate-950 border-slate-800">
+                      <SelectTrigger>
                         <SelectValue placeholder="Selecciona" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                      <SelectContent>
                         <SelectItem value="Comida">Comida</SelectItem>
                         <SelectItem value="Transporte">Transporte</SelectItem>
                         <SelectItem value="Salario">Salario</SelectItem>
@@ -329,7 +329,7 @@ export default function Transactions() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-500">
+                  <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white">
                     {isSubmitting ? "Guardando..." : "Guardar Movimiento"}
                   </Button>
                 </DialogFooter>
@@ -339,57 +339,57 @@ export default function Transactions() {
         </div>
       </div>
 
-      <Card className="bg-slate-900 border-slate-800">
+      <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <Tabs value={filterType} onValueChange={setFilterType} className="w-full md:w-[400px]">
-                <TabsList className="bg-slate-950 border border-slate-800">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-400 text-slate-300">Todos</TabsTrigger>
-                  <TabsTrigger value="income" className="data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-400 text-slate-300">Ingresos</TabsTrigger>
-                  <TabsTrigger value="expense" className="data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-400 text-slate-300">Egresos</TabsTrigger>
+                <TabsList className="border border-border bg-muted">
+                  <TabsTrigger value="all">Todos</TabsTrigger>
+                  <TabsTrigger value="income">Ingresos</TabsTrigger>
+                  <TabsTrigger value="expense">Egresos</TabsTrigger>
                 </TabsList>
               </Tabs>
               <div className="relative w-full md:w-[300px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar concepto..."
-                  className="pl-9 bg-slate-950 border-slate-800"
+                  className="pl-9"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
               <div className="flex items-center gap-2 mr-4">
-                <Filter className="h-4 w-4 text-slate-400" />
-                <span className="text-sm text-slate-400 font-medium">Filtros:</span>
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground font-medium">Filtros:</span>
               </div>
               <Select value={filterCategory} onValueChange={(val) => setFilterCategory(val || "all")}>
-                <SelectTrigger className="w-[180px] bg-slate-950 border-slate-800 h-9 text-slate-300">
+                <SelectTrigger className="w-[180px] h-9">
                   <SelectValue placeholder="Categoría" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                  <SelectItem value="all" className="text-slate-300 focus:bg-slate-800 focus:text-white">Todas las categorías</SelectItem>
-                  <SelectItem value="Comida" className="text-slate-300 focus:bg-slate-800 focus:text-white">Comida</SelectItem>
-                  <SelectItem value="Transporte" className="text-slate-300 focus:bg-slate-800 focus:text-white">Transporte</SelectItem>
-                  <SelectItem value="Salario" className="text-slate-300 focus:bg-slate-800 focus:text-white">Salario</SelectItem>
-                  <SelectItem value="Renta" className="text-slate-300 focus:bg-slate-800 focus:text-white">Renta</SelectItem>
-                  <SelectItem value="Entretenimiento" className="text-slate-300 focus:bg-slate-800 focus:text-white">Entretenimiento</SelectItem>
-                  <SelectItem value="Otros" className="text-slate-300 focus:bg-slate-800 focus:text-white">Otros</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  <SelectItem value="Comida">Comida</SelectItem>
+                  <SelectItem value="Transporte">Transporte</SelectItem>
+                  <SelectItem value="Salario">Salario</SelectItem>
+                  <SelectItem value="Renta">Renta</SelectItem>
+                  <SelectItem value="Entretenimiento">Entretenimiento</SelectItem>
+                  <SelectItem value="Otros">Otros</SelectItem>
                 </SelectContent>
               </Select>
-              <Input 
-                type="date" 
-                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm text-slate-300" 
+              <Input
+                type="date"
+                className="w-[150px] h-9 text-sm"
                 value={filterDateFrom}
                 onChange={(e) => setFilterDateFrom(e.target.value)}
                 title="Fecha inicio"
               />
-              <span className="text-slate-500">-</span>
-              <Input 
-                type="date" 
-                className="w-[150px] h-9 bg-slate-950 border-slate-800 text-sm text-slate-300" 
+              <span className="text-muted-foreground">-</span>
+              <Input
+                type="date"
+                className="w-[150px] h-9 text-sm"
                 value={filterDateTo}
                 onChange={(e) => setFilterDateTo(e.target.value)}
                 title="Fecha fin"
@@ -398,7 +398,7 @@ export default function Transactions() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-9 text-slate-400 hover:text-white"
+                  className="h-9 text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setFilterCategory("all");
                     setFilterDateFrom("");
@@ -412,39 +412,39 @@ export default function Transactions() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-slate-800">
+          <div className="rounded-md border border-border">
             <Table>
-              <TableHeader className="bg-slate-950/50">
-                <TableRow className="border-slate-800 hover:bg-transparent">
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[40px] px-4">
                     <Checkbox 
                       checked={selectedIds.length === filteredTransactions.length && filteredTransactions.length > 0}
                       onCheckedChange={toggleSelectAll}
-                      className="border-slate-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                      className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                     />
                   </TableHead>
-                  <TableHead className="text-slate-400">Concepto</TableHead>
-                  <TableHead className="text-slate-400">Categoría</TableHead>
-                  <TableHead className="text-slate-400">Fecha</TableHead>
-                  <TableHead className="text-right text-slate-400">Monto</TableHead>
+                  <TableHead>Concepto</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="border-slate-800 hover:bg-slate-800/30">
+                  <TableRow key={tx.id} className="hover:bg-muted/50">
                     <TableCell className="px-4">
                       <Checkbox 
                         checked={selectedIds.includes(tx.id)}
                         onCheckedChange={() => toggleSelectRow(tx.id)}
-                        className="border-slate-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                        className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                       />
                     </TableCell>
-                    <TableCell className="font-medium text-white">
+                    <TableCell className="font-medium text-foreground">
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "flex h-8 w-8 items-center justify-center rounded-full",
-                          tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-400"
+                          tx.type === "income" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"
                         )}>
                           {tx.type === "income" ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                         </div>
@@ -452,14 +452,14 @@ export default function Transactions() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-slate-800 border-slate-700 text-slate-400">
+                      <Badge variant="outline" className="bg-muted text-muted-foreground">
                         {tx.category}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-400">{formatDate(tx.occurredAt)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDate(tx.occurredAt)}</TableCell>
                     <TableCell className={cn(
                       "text-right font-semibold",
-                      tx.type === "income" ? "text-emerald-400" : "text-white"
+                      tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
                     )}>
                       {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amountCents)}
                     </TableCell>
@@ -470,7 +470,7 @@ export default function Transactions() {
                 ))}
                 {filteredTransactions.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-slate-500">
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       No se encontraron movimientos.
                     </TableCell>
                   </TableRow>
@@ -484,23 +484,23 @@ export default function Transactions() {
       {/* Bulk Action Bar */}
       {selectedIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6">
-            <div className="flex items-center gap-2 border-r border-slate-700 pr-6">
+          <div className="bg-card text-card-foreground border border-border shadow-2xl rounded-full px-6 py-3 flex items-center gap-6">
+            <div className="flex items-center gap-2 border-r border-border pr-6">
               <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                 {selectedIds.length}
               </span>
-              <span className="text-sm text-slate-300 font-medium">Seleccionados</span>
+              <span className="text-sm text-foreground font-medium">Seleccionados</span>
             </div>
             
             <div className="flex items-center gap-2">
               <Select onValueChange={(val: string | null) => {
                 if (val) handleBulkCategoryUpdate(val);
               }}>
-                <SelectTrigger className="h-9 w-[180px] bg-slate-800 border-slate-700 text-xs">
-                  <Tag className="mr-2 h-3.5 w-3.5 text-slate-400" />
+                <SelectTrigger className="h-9 w-[180px] text-xs">
+                  <Tag className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                   <SelectValue placeholder="Cambiar categoría" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                <SelectContent>
                   <SelectItem value="Comida">Comida</SelectItem>
                   <SelectItem value="Transporte">Transporte</SelectItem>
                   <SelectItem value="Salario">Salario</SelectItem>
@@ -523,7 +523,7 @@ export default function Transactions() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-9 text-slate-400 hover:text-white"
+                className="h-9 text-muted-foreground hover:text-foreground"
                 onClick={() => setSelectedIds([])}
               >
                 Cancelar

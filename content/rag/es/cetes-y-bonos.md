@@ -1,0 +1,13 @@
+# CETES y bonos gubernamentales en México
+
+Los CETES son Certificados de la Tesorería de la Federación: deuda de corto plazo emitida por el Gobierno de México. Al comprar un CETE, la persona presta dinero al gobierno por un plazo definido y recibe al vencimiento el valor nominal; el rendimiento viene de comprarlo con descuento. Suelen usarse para metas de corto o mediano plazo porque tienen riesgo crediticio relativamente bajo, plazos conocidos y una mecánica sencilla.
+
+Los Bonos M, Udibonos y Bondes F también son valores gubernamentales, pero no funcionan igual que los CETES. Los Bonos M suelen pagar intereses periódicos a tasa fija y tienen plazos más largos. Los Udibonos están denominados en UDIS, por lo que ayudan a conservar poder adquisitivo frente a la inflación, aunque su precio puede moverse. Los Bondes F pagan intereses variables, ligados a tasas de referencia, y pueden ser útiles cuando las tasas cambian.
+
+Una diferencia importante es el plazo. Si el dinero se necesitará pronto, conviene evitar instrumentos largos que podrían venderse antes del vencimiento con pérdida de precio. Si el objetivo es de varios años, puede tener sentido comparar instrumentos de mayor plazo, entendiendo que el valor de mercado puede subir o bajar antes de que venza el bono.
+
+La tasa anunciada no es lo único que importa. También conviene revisar fecha de vencimiento, liquidez, impuestos, comisiones de la plataforma, reinversión automática y si el dinero estará disponible justo cuando se necesite. En instrumentos de deuda, el riesgo no desaparece: cambia de forma. Puede haber riesgo de tasa, de inflación, de liquidez o de reinvertir a tasas menores en el futuro.
+
+CETES y bonos no deben confundirse con una promesa de rendimiento garantizado para cualquier situación. Mantener el instrumento hasta vencimiento reduce algunas incertidumbres, pero vender antes puede generar un resultado distinto al esperado. Para una persona que empieza, una práctica prudente es separar primero el fondo de emergencia, después elegir plazos que coincidan con la meta y evitar concentrar todo el ahorro en un solo vencimiento.
+
+Antes de invertir, ayuda escribir tres respuestas: para qué es el dinero, cuándo se va a usar y qué pérdida temporal se toleraría sin afectar gastos esenciales. Si la respuesta es “lo necesito en cualquier momento”, una cuenta líquida o un fondo de emergencia puede ser más adecuado que un bono largo. Si la meta tiene fecha clara, se puede comparar el calendario de vencimientos con esa fecha.

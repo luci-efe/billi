@@ -75,8 +75,8 @@ export function EvidenceUploader({
         onDragLeave={() => setIsDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-slate-700 bg-slate-950 p-4 text-xs text-slate-400 transition-colors hover:border-indigo-500 hover:text-indigo-300',
-          isDragging && 'border-indigo-500 bg-indigo-500/5 text-indigo-300',
+          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/40 p-4 text-xs text-muted-foreground transition-colors hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-300',
+          isDragging && 'border-indigo-500 bg-indigo-500/5 text-indigo-600 dark:text-indigo-300',
           isUploading && 'cursor-wait opacity-70',
         )}
       >
@@ -90,7 +90,7 @@ export function EvidenceUploader({
             ? 'Subiendo comprobante…'
             : 'Arrastra un archivo o haz clic para subir'}
         </span>
-        <span className="text-[10px] text-slate-500">
+        <span className="text-[10px] text-muted-foreground">
           PDF, JPG, PNG, WebP · máx 5MB
         </span>
         <input
@@ -106,7 +106,7 @@ export function EvidenceUploader({
       {error && (
         <p
           role="alert"
-          className="text-xs text-rose-400"
+          className="text-xs text-rose-600 dark:text-rose-400"
           data-testid="evidence-uploader-error"
         >
           {error}

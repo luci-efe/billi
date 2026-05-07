@@ -1,5 +1,63 @@
-Presupuesto personal mensual
+# Presupuesto personal mensual en México
 
-Un presupuesto ayuda a decidir de antemano cómo se usará el ingreso del mes. Primero registra los ingresos seguros, después separa gastos fijos como renta, transporte y servicios, y al final asigna una cantidad realista para comida, ahorro y entretenimiento.
+Un presupuesto personal es un plan para decidir antes de gastar. Sirve para cubrir necesidades, evitar atrasos y dar seguimiento a metas como renta, transporte, comida, ahorro, pago de deudas o estudios. No necesita ser perfecto: debe ser claro, realista y fácil de revisar.
 
-Una regla útil para estudiantes es revisar los gastos pequeños de cada semana. Si el dinero no alcanza, conviene ajustar categorías variables antes de atrasarse en pagos importantes. El objetivo no es eliminar todos los gustos, sino tomar decisiones conscientes y evitar deudas innecesarias.
+## Paso 1: calcula ingreso disponible
+
+Empieza con el dinero que realmente puedes usar durante el mes. Si recibes nómina, usa el ingreso neto después de impuestos y descuentos. Si trabajas por honorarios, ventas, propinas o plataformas, usa un promedio conservador y separa una reserva para impuestos, comisiones o meses bajos.
+
+No presupuestes con ingresos inciertos como bonos, tandas no cobradas, préstamos esperados o ventas que todavía no ocurren. Si llegan, úsalos para reforzar ahorro, pagar deuda o adelantar una meta.
+
+## Paso 2: separa gastos esenciales
+
+Los gastos esenciales son los que mantienen tu vida funcionando: vivienda, alimentos, transporte, servicios básicos, salud, colegiatura necesaria, cuidado de dependientes y pagos mínimos de deudas. Estos pagos deben apartarse primero porque atrasarse puede generar recargos, intereses o pérdida de servicios.
+
+Conviene registrar el monto, fecha de pago y forma de pago. En México es común que algunos servicios se paguen por recibo, transferencia, SPEI, domiciliación o efectivo; anotar la fecha evita olvidar vencimientos.
+
+## Paso 3: identifica gastos variables
+
+Los gastos variables cambian cada semana: comida fuera de casa, cafés, apps de transporte, compras en línea, entretenimiento, suscripciones, regalos y antojos. No son necesariamente malos, pero suelen explicar por qué “se va” el dinero.
+
+Una técnica simple es revisar movimientos de banco y efectivo por 30 días y agruparlos en categorías. Si una categoría no aporta valor proporcional, ajusta primero ahí antes de recortar necesidades importantes.
+
+## Paso 4: asigna ahorro como categoría
+
+El ahorro funciona mejor cuando tiene nombre y fecha: fondo de emergencia, inscripción escolar, mantenimiento del auto, vacaciones, trámite, computadora o enganche. Apartar el ahorro al recibir dinero reduce la tentación de gastarlo.
+
+Si el mes está muy apretado, una meta pequeña y constante suele ser mejor que esperar a ahorrar una cantidad grande. El hábito y la visibilidad importan más que la cantidad inicial.
+
+## Paso 5: revisa el presupuesto cada semana
+
+Una revisión semanal de 10 minutos ayuda a detectar desviaciones antes de que termine el mes. Preguntas útiles: ¿qué pagos vencen esta semana?, ¿qué categoría se está acabando?, ¿hay un gasto no planeado?, ¿conviene pausar compras no urgentes?
+
+El presupuesto no es castigo. Es una herramienta para decidir con información y evitar que el crédito o los gastos impulsivos sustituyan la planeación.
+
+## Señales de alerta
+
+- Usar tarjeta de crédito para cubrir gastos básicos porque el efectivo no alcanza.
+- Pagar solo mínimos de deudas de manera recurrente.
+- No saber cuánto cuesta el mes normal de vida.
+- Depender de préstamos para llegar a la quincena.
+- No separar dinero para gastos anuales como seguros, inscripciones, mantenimiento o impuestos.
+
+## Ejemplo de categorías chunk-friendly
+
+Ingresos: nómina neta, honorarios cobrados, ventas recibidas, apoyo familiar.
+
+Esenciales: renta, despensa, transporte, luz, agua, internet necesario, medicinas, colegiatura, cuidado de dependientes.
+
+Financieros: ahorro, fondo de emergencia, pago de tarjeta, préstamo personal, crédito automotriz, aportaciones voluntarias.
+
+Variables: comida fuera, entretenimiento, compras personales, suscripciones, regalos, viajes cortos.
+
+Anuales o irregulares: seguro, predial, tenencia o refrendo según aplique, mantenimiento del hogar, reparación del celular, útiles escolares.
+
+## Buenas prácticas
+
+- Presupuestar con dinero ya recibido o altamente probable, no con deseos.
+- Automatizar pagos o recordatorios cuando sea posible.
+- Separar el dinero de ahorro en una cuenta distinta a la de gasto diario.
+- Revisar estados de cuenta para detectar comisiones, cargos duplicados o suscripciones olvidadas.
+- Ajustar el presupuesto si cambia el ingreso, la renta, la deuda o una responsabilidad familiar.
+
+Un presupuesto útil no busca eliminar todos los gustos. Busca que los gastos importantes estén cubiertos, que las decisiones sean conscientes y que las deudas no crezcan por falta de visibilidad.

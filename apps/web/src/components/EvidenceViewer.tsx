@@ -110,20 +110,20 @@ export function EvidenceViewer({
 
   if (isLoading && documents.length === 0) {
     return (
-      <p className="text-xs text-slate-400 flex items-center gap-2">
+      <p className="text-xs text-muted-foreground flex items-center gap-2">
         <Loader2 className="h-3 w-3 animate-spin" /> Cargando comprobantes…
       </p>
     );
   }
 
   if (documents.length === 0) {
-    return <p className="text-xs text-slate-500">Aún no hay comprobantes.</p>;
+    return <p className="text-xs text-muted-foreground">Aún no hay comprobantes.</p>;
   }
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       {error && (
-        <p role="alert" className="text-xs text-rose-400">{error}</p>
+        <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{error}</p>
       )}
       <ul className="flex flex-col gap-2">
         {documents.map((doc) => {
@@ -134,9 +134,9 @@ export function EvidenceViewer({
           return (
             <li
               key={doc.id}
-              className="flex items-center gap-3 rounded-md border border-slate-800 bg-slate-950/60 p-2"
+              className="flex items-center gap-3 rounded-md border border-border bg-background/60 p-2"
             >
-              <div className="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-md bg-slate-800">
+              <div className="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-md bg-muted">
                 {isReady && isImage ? (
                   <img
                     src={url}
@@ -145,9 +145,9 @@ export function EvidenceViewer({
                     loading="lazy"
                   />
                 ) : isReady ? (
-                  <FileText className="h-5 w-5 text-slate-300" />
+                  <FileText className="h-5 w-5 text-muted-foreground" />
                 ) : (
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
               </div>
               <div className="flex min-w-0 flex-1 flex-col">
@@ -157,17 +157,17 @@ export function EvidenceViewer({
                     target="_blank"
                     rel="noopener noreferrer"
                     download={doc.fileName}
-                    className="truncate text-xs font-medium text-indigo-300 hover:underline"
+                    className="truncate text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-300"
                     title={doc.fileName}
                   >
                     {doc.fileName}
                   </a>
                 ) : (
-                  <span className="truncate text-xs font-medium text-slate-300" title={doc.fileName}>
+                  <span className="truncate text-xs font-medium text-foreground" title={doc.fileName}>
                     {doc.fileName}
                   </span>
                 )}
-                <span className="text-[10px] text-slate-500">
+                <span className="text-[10px] text-muted-foreground">
                   {doc.fileType} · {fmtSize(doc.fileSize)}
                 </span>
               </div>
@@ -177,7 +177,7 @@ export function EvidenceViewer({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-indigo-300"
+                    className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-300"
                     aria-label={`Abrir ${doc.fileName}`}
                   >
                     <ExternalLink className="h-4 w-4" />
@@ -185,7 +185,7 @@ export function EvidenceViewer({
                   <a
                     href={url}
                     download={doc.fileName}
-                    className="text-slate-400 hover:text-indigo-300"
+                    className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-300"
                     aria-label={`Descargar ${doc.fileName}`}
                   >
                     <Download className="h-4 w-4" />
@@ -198,7 +198,7 @@ export function EvidenceViewer({
                 size="sm"
                 onClick={() => handleDelete(doc.id)}
                 disabled={deletingId === doc.id}
-                className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                className="text-rose-600 hover:bg-rose-500/10 hover:text-rose-500 dark:text-rose-400 dark:hover:text-rose-300"
                 aria-label={`Eliminar ${doc.fileName}`}
               >
                 {deletingId === doc.id ? (

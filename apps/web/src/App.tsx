@@ -18,7 +18,7 @@ function App() {
       <Route
         path="/sign-in/*"
         element={
-          <div className="flex min-h-screen items-center justify-center bg-slate-950">
+          <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
             <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
           </div>
         }
@@ -26,7 +26,7 @@ function App() {
       <Route
         path="/sign-up/*"
         element={
-          <div className="flex min-h-screen items-center justify-center bg-slate-950">
+          <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
             <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
           </div>
         }

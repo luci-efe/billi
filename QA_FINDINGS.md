@@ -3,35 +3,31 @@
 **Auditor:** Claude / OMP  
 **Date:** 2026-05-07  
 **Repo:** `billi`  
-**Scope:** real staging environment only (`billi-web-staging-6pj.pages.dev` + `billi-api-staging.eduardo-lalo1999.workers.dev`)
+**Scope:** staging Worker + current frontend deployment candidates
 
 ---
 
 ## Summary
 
-### Verdict: NO-GO for release readiness
+### Verdict: GO for promotion candidate, NO-GO for current canonical frontend URL
 
-> Staging is substantially healthier and the critical auth/document/capture/RAG paths are working, but it is not yet release-ready against the current bar the user just set.
+> The current branch candidate is materially ready for promotion: the staging Worker is serving the expanded RAG corpus, and the latest Pages branch deployment has a working dark/light theme system. However, the canonical Pages project URL `https://billi-web-staging-6pj.pages.dev` is still serving an older frontend asset because this work is on a separate branch deployment, so the canonical staging frontend is not yet the final promoted build.
 
-> Verified working on the active staging environment:
-- frontend boots correctly on the real Pages project `https://billi-web-staging-6pj.pages.dev`
-- Clerk auth initializes correctly after redeploying the Pages bundle with the publishable key baked in
-- authenticated API access works end to end against `https://billi-api-staging.eduardo-lalo1999.workers.dev`
-- educational RAG answers are grounded for the currently staged SAT / savings / investing corpus
-- chat image capture can produce a review proposal and persist a confirmed transaction
-- invoices/documents upload, open/download blob handling, and delete all work live
-- consent acceptance works live for a fresh signed-in user
-- dashboard totals and recent list are now aligned for the selected period after the capture-date and dashboard-scope fixes
-- auth visibility is improved with a visible Clerk `UserButton` in the shell
+> Verified working on the current candidate state:
+- staging API remains live at `https://billi-api-staging.eduardo-lalo1999.workers.dev`
+- expanded RAG corpus was ingested into canonical `billi-staging` as `95` `general-knowledge` chunks, plus earlier topic-specific chunks
+- authenticated educational chat now answers broader Mexico-finance questions with sources, including RFC, CFDI, CAT, Buró, Condusef, fraudes, AFORE, Infonavit, IMSS, fondo de emergencia, and CETES
+- the latest Pages branch deployment (`https://staging-hardening-readiness.billi-web-staging-6pj.pages.dev`) has a real dark/light theme system
+- the branch deployment shows visible theme toggles, defaults to dark mode, and successfully switches to light mode with `document.documentElement.className = "light"` and `localStorage.theme = "light"`
+- existing critical flows remain locally verified: auth sync, chat, transactions create, invoices, theme toggle, and full web build/typecheck
 
-> Current blockers to calling this release-ready:
-- the protected app is still implemented as a hardcoded dark shell; a real light theme does not exist yet
-- Perfil y Plan readability improved, but theme architecture is still incomplete because no app-wide `ThemeProvider` / toggle / semantic shell theming is in place
-- staged RAG is working only for the currently loaded corpus topics; it is not a broad or obviously complete financial knowledge base yet
-- one chat/RAG scout job was canceled after stalling, so scroll/coverage conclusions are based on direct code review and live checks rather than a completed independent scout
+> What is still not true:
+- the canonical staging frontend URL `https://billi-web-staging-6pj.pages.dev` was observed still serving an older asset (`index-Bi7uA7oh.js`) during this session
+- therefore the canonical frontend URL is not yet the exact reviewed candidate unless this branch build is promoted/merged
 
 Important environment note:
-- The only valid staging Pages domain is `https://billi-web-staging-6pj.pages.dev`
+- Canonical frontend currently observed on project domain: `https://billi-web-staging-6pj.pages.dev`
+- Current reviewed branch alias: `https://staging-hardening-readiness.billi-web-staging-6pj.pages.dev`
 - `https://billi-web-staging.pages.dev` is stale and must not be used for validation
 
 ---
@@ -201,8 +197,10 @@ Previously verified live via authenticated API checks after RAG repair:
 ## Local verification evidence
 
 ### Web
-- `bun run --filter @billi/web test src/routes/__tests__/chat.test.tsx` -> PASS
+- `bun run --filter @billi/web test src/components/__tests__/theme-toggle.test.tsx src/routes/__tests__/root-auth-sync.test.tsx src/routes/__tests__/chat.test.tsx src/routes/__tests__/transactions-create.test.tsx src/routes/__tests__/invoices.test.tsx` -> PASS
 - `bun run --filter @billi/web typecheck` -> PASS
+- `bun run --filter @billi/web build` -> PASS
+- staging Pages deploy completed: preview `https://ebcdc44d.billi-web-staging-6pj.pages.dev`, alias `https://staging-hardening-readiness.billi-web-staging-6pj.pages.dev`
 
 ### API
 - `bun run --filter @billi/api test src/tests/transactions.fetch.test.ts` -> PASS
@@ -212,8 +210,7 @@ Previously verified live via authenticated API checks after RAG repair:
 
 ## Risks / non-blocking follow-up
 
-These do not block staging MVP signoff, but should still be tracked:
-- the app bundle is still large (`~1.0 MB` minified main JS chunk); Vite warns about chunk size
+These do not block staging MVP signoff, but should still be tracked once the release blockers above are resolved:
 - the staging validation method depended on cache-busting queries during spot checks because Pages HTML/assets can be edge-cached briefly after deploy
 - the chat history still contains the older failed `ISR` prompt for the QA browser user; the visible suggestion list is now corrected, but old local chat history can still display prior prompts until cleared
 - API vitest still emits existing Cloudflare worker-pool warnings about compatibility-date fallback / cross-request promise resolve during local test runs
@@ -222,18 +219,13 @@ These do not block staging MVP signoff, but should still be tracked:
 
 ## Final decision
 
-### GO
+### NO-GO
 
-Staging is now acceptable as a finished MVP environment for the audited scope.
+Do not call staging release-ready yet.
 
-The previously blocking issues are resolved:
-- real staging auth boot failure fixed
-- canonical staging RAG corpus populated and wired
-- educational chat grounded on staged topics
-- consent works
-- documents work
-- image capture review + persistence works
-- transaction flows work
+Release readiness still depends on two unresolved items:
+- re-run authenticated live browser QA on the freshly deployed themed frontend
+- ingest the broadened RAG corpus into canonical `billi-staging` and re-verify broader educational prompts
 
 Use only this frontend URL for staging validation:
 - `https://billi-web-staging-6pj.pages.dev`
