@@ -19,9 +19,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       // /api/* is routed to the Hono Worker (apps/api) in dev.
-      // In prod both are same-origin via a Cloudflare zone route, so CORS never
-      // applies; this proxy exists only to preserve that same-origin contract
-      // during local development.
+      // Staging Pages calls the deployed staging Worker directly when no
+      // VITE_API_BASE_URL is configured; this proxy only preserves local
+      // same-origin /api behavior during development.
       '/api': {
         target: 'http://127.0.0.1:8787',
         changeOrigin: true,

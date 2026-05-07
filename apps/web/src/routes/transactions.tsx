@@ -117,7 +117,8 @@ export default function Transactions() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [newTransactionType, setNewTransactionType] = useState<'income' | 'expense'>('expense');
+  const [newTransactionCategory, setNewTransactionCategory] = useState('Otros');
   // Open create dialog if navigated with state flag
   useEffect(() => {
     if (location.state?.openCreate) {
@@ -228,20 +229,20 @@ export default function Transactions() {
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
     const amount = Number(formData.get("amount"));
-    const type = formData.get("type") as 'income' | 'expense';
     
     try {
       await createTransaction({
         note: formData.get("title") as string,
-        category: formData.get("category") as string,
+        category: newTransactionCategory,
         amountCents: Math.round(amount * 100),
-        type,
+        type: newTransactionType,
         occurredAt: Math.floor(Date.now() / 1000),
         source: 'form',
       });
 
       setIsDialogOpen(false);
-      toast.success("Movimiento registrado con éxito");
+      setNewTransactionType('expense');
+      setNewTransactionCategory('Otros');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al registrar movimiento");
     } finally {
@@ -265,13 +266,20 @@ export default function Transactions() {
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger>
-              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white">
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Movimiento
-              </Button>
-            </DialogTrigger>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setNewTransactionType('expense');
+              setNewTransactionCategory('Otros');
+            }
+          }}>
+            <Button
+              className="bg-indigo-600 hover:bg-indigo-500 text-white"
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo Movimiento
+            </Button>
             <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
               <form onSubmit={handleAddTransaction}>
                 <DialogHeader>
@@ -292,9 +300,9 @@ export default function Transactions() {
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="type">Tipo</Label>
-                      <Select name="type" defaultValue="expense">
+                      <Select value={newTransactionType} onValueChange={(value) => setNewTransactionType(value as 'income' | 'expense')}>
                         <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-300">
-                          <SelectValue placeholder="Selecciona">{TYPE_LABELS.expense}</SelectValue>
+                          <SelectValue placeholder="Selecciona">{TYPE_LABELS[newTransactionType]}</SelectValue>
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
                           <SelectItem value="income" className="text-slate-300 focus:bg-slate-800 focus:text-white">Ingreso</SelectItem>
@@ -305,7 +313,7 @@ export default function Transactions() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="category">Categoría</Label>
-                    <Select name="category" defaultValue="Otros">
+                    <Select value={newTransactionCategory} onValueChange={(value) => setNewTransactionCategory(value ?? 'Otros')}>
                       <SelectTrigger className="bg-slate-950 border-slate-800">
                         <SelectValue placeholder="Selecciona" />
                       </SelectTrigger>

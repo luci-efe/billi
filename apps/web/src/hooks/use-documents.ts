@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiClient } from '../lib/api-client';
+import { apiClient, buildApiUrl } from '../lib/api-client';
 
 export interface DocumentItem {
   id: string;
@@ -20,11 +20,11 @@ export const MAX_DOCUMENT_SIZE_BYTES = 5 * 1024 * 1024;
 
 /**
  * Build a stable URL for downloading/previewing a document.
- * Works with `<img src>` and `<a download>` because /api/documents/:id
- * sets credentialed cookies via same-origin proxy in dev and zone route in prod.
+ * Uses the same API base resolution as fetch calls so staging Pages does not
+ * accidentally request the SPA shell from same-origin /api/* URLs.
  */
 export function documentDownloadUrl(documentId: string): string {
-  return `/api/documents/${documentId}`;
+  return buildApiUrl(`/api/documents/${documentId}`);
 }
 
 /**
@@ -116,4 +116,12 @@ export async function deleteDocument(documentId: string): Promise<void> {
   if (!res.ok && res.status !== 204) {
     throw new Error('No pudimos eliminar el comprobante.');
   }
+}
+
+export async function fetchDocumentBlob(documentId: string): Promise<Blob> {
+  const res = await apiClient.get(`/api/documents/${documentId}`);
+  if (!res.ok) {
+    throw new Error('No pudimos abrir el comprobante.');
+  }
+  return await res.blob();
 }

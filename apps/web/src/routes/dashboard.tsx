@@ -67,7 +67,7 @@ export default function Dashboard() {
   };
 
   const calculateTrend = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? "New activity" : "0%";
+    if (previous === 0) return current > 0 ? "Nueva actividad" : "0%";
     const change = ((current - previous) / previous) * 100;
     const sign = change > 0 ? "+" : "";
     return `${sign}${change.toFixed(1)}%`;
@@ -251,7 +251,7 @@ export default function Dashboard() {
                 </div>
               </>
             ) : (
-              <div className="text-slate-500 text-sm">No spending data available for this period</div>
+              <div className="text-slate-500 text-sm">No hay gastos registrados en este periodo</div>
             )}
           </CardContent>
         </Card>
@@ -262,7 +262,7 @@ export default function Dashboard() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-white">Transacciones Recientes</CardTitle>
-            <CardDescription className="text-slate-400">Tus últimos movimientos registrados.</CardDescription>
+            <CardDescription className="text-slate-400">Tus últimos movimientos dentro del periodo seleccionado.</CardDescription>
           </div>
           <Button variant="link" className="text-indigo-400 hover:text-indigo-300">
             Ver todas

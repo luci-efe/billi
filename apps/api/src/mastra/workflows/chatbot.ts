@@ -159,6 +159,10 @@ const HISTORY_SUMMARY_RE =
 const HISTORY_LIST_RE = /(últim|ultim).{0,10}(transac|movim|gast|ingres)/i;
 const TODAY_RE = /\bhoy\b/i;
 const WEEK_RE = /\b(esta\s+semana|semana\s+actual|últim[ao]s?\s+\d*\s*d[ií]as?)\b/i;
+const EXPENSE_HINT_RE = /(gast[ée]|gasto|gastos|egreso|egresos)/i;
+const INCOME_HINT_RE = /(ingres[oó]|ingresos|gan[ée]|ganancia|ganancias)/i;
+const BALANCE_HINT_RE = /\bbalance\b|\bsaldo\b|\bresumen\b/i;
+const CATEGORY_HINT_RE = /\b(?:en|de)\s+([\p{L}][\p{L}\s]{1,30}?)(?=\s+(?:este|esta|del|de la|de las|de los|durante|hoy|ayer)\b|\?|$)/iu;
 
 function rangeForToday(): { from: number; to: number } {
   const now = new Date();
@@ -197,10 +201,42 @@ function pickRange(message: string): { from: number; to: number } {
 
 const MXN = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
+type HistorySummaryIntent = 'balance' | 'expense_total' | 'income_total';
+
 function formatSummary(s: { income: number; expense: number; balance: number }): string {
   return `Tu balance es ${MXN.format(s.balance / 100)} (ingresos: ${MXN.format(
     s.income / 100,
   )}, egresos: ${MXN.format(s.expense / 100)}).`;
+}
+
+function extractCategoryHint(message: string): string | null {
+  const match = message.match(CATEGORY_HINT_RE);
+  return match?.[1]?.trim() ?? null;
+}
+
+function detectSummaryIntent(message: string): HistorySummaryIntent {
+  if (BALANCE_HINT_RE.test(message)) return 'balance';
+  if (INCOME_HINT_RE.test(message)) return 'income_total';
+  if (EXPENSE_HINT_RE.test(message)) return 'expense_total';
+  return 'balance';
+}
+
+function formatFocusedSummary(
+  intent: HistorySummaryIntent,
+  summary: { income: number; expense: number; balance: number },
+  rangeLabel: string,
+  category?: string | null,
+): string {
+  const categoryLabel = category ? ` en ${category}` : '';
+  if (intent === 'expense_total') {
+    return `Tus egresos${categoryLabel} ${rangeLabel} suman ${MXN.format(summary.expense / 100)}.`;
+  }
+
+  if (intent === 'income_total') {
+    return `Tus ingresos${categoryLabel} ${rangeLabel} suman ${MXN.format(summary.income / 100)}.`;
+  }
+
+  return formatSummary(summary);
 }
 
 interface TxLike {
@@ -348,11 +384,11 @@ Devuelve el JSON estricto.`,
         return { found: false };
       }
 
-      // Drop chunks with cosine similarity below this threshold so the LLM is
-      // only ever shown high-relevance context. Tunable; SPEC-002 names 0.7
-      // as the fallback trigger. Local-sqlite tests can hit `score=NaN`
-      // when no vectors are seeded; treat NaN/missing as below threshold.
-      const SIMILARITY_THRESHOLD = 0.7;
+      // Drop clearly irrelevant chunks, but keep near-threshold educational hits
+      // from the small MVP corpus. Current staging recall lands around ~0.686 for
+      // investing, ~0.645 for SAT, and ~0.632 for ahorro, so 0.62 preserves those
+      // grounded answers without opening the door to the weaker ~0.53 and below hits.
+      const SIMILARITY_THRESHOLD = 0.62;
 
       let chunks: Awaited<ReturnType<typeof retrieveTopK>> = [];
       try {
@@ -431,8 +467,23 @@ ${numbered}`,
       // the tool; the tool's output is quoted verbatim.
       if (HISTORY_SUMMARY_RE.test(message)) {
         const { from, to } = pickRange(message);
-        const summary = await getSummary(db, ownerId, from, to);
-        return { text: formatSummary(summary) };
+        const summaryIntent = detectSummaryIntent(message);
+        const category = summaryIntent === 'balance' ? null : extractCategoryHint(message);
+        const summaryFilter = {
+          ...(summaryIntent === 'expense_total' ? { type: 'expense' as const } : {}),
+          ...(summaryIntent === 'income_total' ? { type: 'income' as const } : {}),
+          ...(category ? { category } : {}),
+        };
+        const summary = await getSummary(db, ownerId, from, to, summaryFilter);
+        const rangeLabel = TODAY_RE.test(message)
+          ? 'de hoy'
+          : WEEK_RE.test(message)
+            ? 'de esta semana'
+            : 'de este mes';
+
+        return {
+          text: formatFocusedSummary(summaryIntent, summary, rangeLabel, category),
+        };
       }
 
       if (HISTORY_LIST_RE.test(message)) {

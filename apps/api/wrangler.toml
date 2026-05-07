@@ -32,7 +32,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 BILLI_ENV = "local"
 BILLI_LLM_MODEL = "openai/gpt-4o-mini"
-BILLI_VISION_MODEL = "openai/gpt-4o-mini"
+BILLI_VISION_MODEL = "google/gemini-3-flash-preview"
 
 # R2 bucket for uploaded source documents (receipts, invoices, statements).
 # Bucket name overridden per environment below.
@@ -91,7 +91,7 @@ workers_dev = true            # reach via https://billi-api-staging.<subdomain>.
 [env.staging.vars]
 BILLI_ENV = "staging"
 BILLI_LLM_MODEL = "openai/gpt-4o-mini"
-BILLI_VISION_MODEL = "openai/gpt-4o-mini"
+BILLI_VISION_MODEL = "google/gemini-3-flash-preview"
 
 [[env.staging.r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
@@ -120,7 +120,7 @@ workers_dev = false
 [env.production.vars]
 BILLI_ENV = "production"
 BILLI_LLM_MODEL = "openai/gpt-4o-mini"
-BILLI_VISION_MODEL = "openai/gpt-4o-mini"
+BILLI_VISION_MODEL = "google/gemini-3-flash-preview"
 
 [[env.production.r2_buckets]]
 binding = "DOCUMENTS_BUCKET"

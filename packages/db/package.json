@@ -17,7 +17,7 @@
     "studio": "drizzle-kit studio",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
-    "test": "echo 'no tests in @billi/db yet'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",

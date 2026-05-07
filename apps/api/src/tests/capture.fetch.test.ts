@@ -103,4 +103,33 @@ describe('POST /api/capture', () => {
     };
     expect(body.proposal?.merchant).toBe('Walmart');
   });
+
+  it('accepts a base64 image data URL for capture extraction', async () => {
+    mockChatJSON({
+      amountCents: 45000,
+      category: 'Otros',
+      type: 'expense',
+      date: '2026-05-06',
+      merchant: 'Costco',
+      confidence: 0.88,
+    });
+
+    const res = await SELF.fetch('http://example.com/api/capture', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test_user_123',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        imageUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA',
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      proposal?: { merchant?: string; amountCents?: number };
+    };
+    expect(body.proposal?.merchant).toBe('Costco');
+    expect(body.proposal?.amountCents).toBe(45000);
+  });
 });

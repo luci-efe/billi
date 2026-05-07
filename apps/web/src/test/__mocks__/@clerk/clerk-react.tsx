@@ -5,6 +5,7 @@ export const SignedIn = ({ children }: { children: React.ReactNode }) => <div da
 export const SignedOut = ({ children }: { children: React.ReactNode }) => <div data-testid="signed-out-content">{children}</div>;
 export const SignIn = () => <div data-testid="clerk-sign-in">Sign In Component</div>;
 export const SignUp = () => <div data-testid="clerk-sign-up">Sign Up Component</div>;
+export const UserButton = () => <div data-testid="clerk-user-button">User Button</div>;
 
 export const useUser = vi.fn(() => ({ user: null, isLoaded: true }));
 export const useAuth = vi.fn(() => ({ isSignedIn: false, userId: null, isLoaded: true }));

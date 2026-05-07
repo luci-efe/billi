@@ -3,17 +3,52 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { SELF } from 'cloudflare:test';
 import { ensureTestSchema, resetTestData } from './setup';
 
+type ProfileResponse = {
+  userId: string;
+  defaultCurrency: string;
+  consentAccepted: boolean;
+  consentVersion?: number | null;
+  rfc?: string | null;
+};
+type DashboardSummaryResponse = {
+  current: { income: number; expense: number; balance: number };
+  categories: Array<{ name: string; value: number }>;
+};
+type CreateTransactionResponse = { id: string };
+type BulkCountResponse = { count: number };
+type TransactionListResponse = { items: Array<unknown> };
+type TransactionResponse = { category: string };
+
 describe('Billi Feature Set Integration', () => {
   beforeAll(ensureTestSchema);
   beforeEach(resetTestData);
 
+
+  describe('CORS preflight', () => {
+    it('allows the current staging Pages origin', async () => {
+      const res = await SELF.fetch('http://example.com/api/me', {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'https://billi-web-staging.pages.dev',
+          'Access-Control-Request-Method': 'GET',
+        },
+      });
+
+      expect(res.status).toBe(204);
+      expect(res.headers.get('access-control-allow-origin')).toBe(
+        'https://billi-web-staging.pages.dev',
+      );
+      expect(res.headers.get('access-control-allow-credentials')).toBe('true');
+      expect(res.headers.get('access-control-allow-headers')).toContain('Authorization');
+    });
+  });
   describe('User Profile & Consent (/api/me)', () => {
     it('GET /api/me upserts a new user and returns default profile', async () => {
       const res = await SELF.fetch('http://example.com/api/me', {
         headers: { Authorization: 'Bearer user_new' },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as ProfileResponse;
       expect(body.userId).toBe('user_new');
       expect(body.defaultCurrency).toBe('MXN');
       expect(body.consentAccepted).toBe(false);
@@ -35,7 +70,7 @@ describe('Billi Feature Set Integration', () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as ProfileResponse;
       expect(body.rfc).toBe('ABCD123456EFG');
       expect(body.defaultCurrency).toBe('USD');
     });
@@ -61,7 +96,7 @@ describe('Billi Feature Set Integration', () => {
       const meRes = await SELF.fetch('http://example.com/api/me', {
         headers: { Authorization: 'Bearer user_123' },
       });
-      const me = await meRes.json();
+      const me = (await meRes.json()) as ProfileResponse;
       expect(me.consentAccepted).toBe(true);
       expect(me.consentVersion).toBe(1);
     });
@@ -104,7 +139,7 @@ describe('Billi Feature Set Integration', () => {
         headers: { Authorization: 'Bearer user_dash' },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as DashboardSummaryResponse;
       
       // API returns values in cents
       expect(body.current.income).toBe(50000);
@@ -122,12 +157,12 @@ describe('Billi Feature Set Integration', () => {
       const res1 = await SELF.fetch('http://example.com/api/transactions', {
         method: 'POST', headers, body: JSON.stringify({ type: 'expense', amountCents: 100, category: 'A', occurredAt: 1 })
       });
-      const { id: id1 } = await res1.json();
+      const { id: id1 } = (await res1.json()) as CreateTransactionResponse;
 
       const res2 = await SELF.fetch('http://example.com/api/transactions', {
         method: 'POST', headers, body: JSON.stringify({ type: 'expense', amountCents: 200, category: 'B', occurredAt: 2 })
       });
-      const { id: id2 } = await res2.json();
+      const { id: id2 } = (await res2.json()) as CreateTransactionResponse;
 
       const bulkRes = await SELF.fetch('http://example.com/api/transactions/bulk-delete', {
         method: 'POST',
@@ -135,13 +170,13 @@ describe('Billi Feature Set Integration', () => {
         body: JSON.stringify({ ids: [id1, id2] }),
       });
       expect(bulkRes.status).toBe(200);
-      const { count } = await bulkRes.json();
+      const { count } = (await bulkRes.json()) as BulkCountResponse;
       expect(count).toBe(2);
 
       const listRes = await SELF.fetch('http://example.com/api/transactions', {
         headers: { Authorization: 'Bearer user_bulk' },
       });
-      const { items } = await listRes.json();
+      const { items } = (await listRes.json()) as TransactionListResponse;
       expect(items.length).toBe(0);
     });
 
@@ -154,7 +189,7 @@ describe('Billi Feature Set Integration', () => {
       const res1 = await SELF.fetch('http://example.com/api/transactions', {
         method: 'POST', headers, body: JSON.stringify({ type: 'expense', amountCents: 100, category: 'Old', occurredAt: 1 })
       });
-      const { id: id1 } = await res1.json();
+      const { id: id1 } = (await res1.json()) as CreateTransactionResponse;
 
       await SELF.fetch('http://example.com/api/transactions/bulk-category', {
         method: 'PATCH',
@@ -165,7 +200,7 @@ describe('Billi Feature Set Integration', () => {
       const getRes = await SELF.fetch(`http://example.com/api/transactions/${id1}`, {
         headers: { Authorization: 'Bearer user_bulk_cat' },
       });
-      const tx = await getRes.json();
+      const tx = (await getRes.json()) as TransactionResponse;
       expect(tx.category).toBe('New');
     });
   });

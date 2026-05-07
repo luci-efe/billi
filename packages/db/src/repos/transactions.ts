@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, lt, or, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, desc, lt, or, inArray, sql } from "drizzle-orm";
 import { transactions, type TransactionRow } from "../schema/transactions";
 import type { DbClient } from "../client";
 
@@ -193,25 +193,40 @@ export async function deleteTransaction(
   return result.length > 0;
 }
 
+export interface SummaryFilter {
+  type?: "income" | "expense";
+  category?: string;
+}
+
+
 export async function getSummary(
   db: DbClient,
   ownerId: string,
   from: number,
-  to: number
+  to: number,
+  filter: SummaryFilter = {},
 ): Promise<{ income: number; expense: number; balance: number }> {
+  const whereClauses = [
+    eq(transactions.ownerId, ownerId),
+    gte(transactions.occurredAt, from),
+    lte(transactions.occurredAt, to),
+  ];
+
+  if (filter.type) {
+    whereClauses.push(eq(transactions.type, filter.type));
+  }
+
+  if (filter.category) {
+    whereClauses.push(sql`lower(${transactions.category}) = lower(${filter.category})`);
+  }
+
   const items = await db
     .select({
       type: transactions.type,
       amountCents: transactions.amountCents,
     })
     .from(transactions)
-    .where(
-      and(
-        eq(transactions.ownerId, ownerId),
-        gte(transactions.occurredAt, from),
-        lte(transactions.occurredAt, to)
-      )
-    );
+    .where(and(...whereClauses));
 
   let income = 0;
   let expense = 0;

@@ -1,6 +1,9 @@
-import { readdir, readFile } from 'fs/promises';
-import { join } from 'path';
+import { readdir, readFile, stat } from 'fs/promises';
+import { join, resolve } from 'path';
 import { z } from 'zod';
+import { sql } from 'drizzle-orm';
+import { createDbClient } from '@billi/db/client';
+import { insertRagChunk } from '@billi/db/repos/rag';
 
 export interface Chunk {
   content: string;
@@ -18,6 +21,7 @@ export interface ProcessOptions {
 
 const DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
 const EMBEDDING_MODEL = 'openai/text-embedding-3-small';
+const DEFAULT_CORPUS_DIR = resolve(process.cwd(), 'content/rag/es');
 // Bounded concurrency. The infrastructure test asserts maxConcurrentRequests<10.
 const MAX_CONCURRENCY = 5;
 const MAX_RETRIES = 3;
@@ -32,10 +36,34 @@ export async function processCorpusDirectory(
   dir: string,
   opts: ProcessOptions = {},
 ): Promise<Chunk[]> {
+  const files = await getFilesRecursively(dir);
+  return processCorpusFiles(files, opts);
+}
+
+export async function processCorpusPath(
+  targetPath: string,
+  opts: ProcessOptions = {},
+): Promise<Chunk[]> {
+  const target = resolve(targetPath);
+  const targetStat = await stat(target);
+
+  if (targetStat.isDirectory()) {
+    return processCorpusDirectory(target, opts);
+  }
+
+  if (targetStat.isFile()) {
+    return processCorpusFiles([target], opts);
+  }
+
+  throw new Error(`Unsupported corpus path: ${target}`);
+}
+
+async function processCorpusFiles(
+  files: string[],
+  opts: ProcessOptions = {},
+): Promise<Chunk[]> {
   const apiKey = opts.apiKey ?? process.env.OPENROUTER_API_KEY ?? 'test-key';
   const baseUrl = opts.baseUrl ?? DEFAULT_BASE_URL;
-
-  const files = await getFilesRecursively(dir);
   const tasks: Array<{ chunk: string; file: string }> = [];
 
   for (const file of files) {
@@ -157,4 +185,61 @@ export async function generateEmbedding(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function ingestCli() {
+  const args = process.argv.slice(2);
+  const dirArgIndex = args.indexOf('--dir');
+  const topicArgIndex = args.indexOf('--topic');
+  const dir = dirArgIndex >= 0 ? args[dirArgIndex + 1] : undefined;
+  const topic = topicArgIndex >= 0 ? args[topicArgIndex + 1] : undefined;
+
+  if (dirArgIndex >= 0 && !dir) {
+    throw new Error('Missing value for --dir');
+  }
+
+  if (topicArgIndex >= 0 && !topic) {
+    throw new Error('Missing value for --topic');
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const dbUrl = process.env.TURSO_DATABASE_URL;
+  const dbToken = process.env.TURSO_AUTH_TOKEN;
+
+  if (!apiKey) throw new Error('Missing OPENROUTER_API_KEY');
+  if (!dbUrl) throw new Error('Missing TURSO_DATABASE_URL');
+  if (!dbToken) throw new Error('Missing TURSO_AUTH_TOKEN');
+
+  const baseDir = resolve(dir ?? DEFAULT_CORPUS_DIR);
+  const targetPath = topic ? resolve(baseDir, `${topic}.md`) : baseDir;
+  const ingestTopic = topic ?? 'general-knowledge';
+  const chunks = await processCorpusPath(targetPath, { apiKey });
+
+  if (chunks.length === 0) {
+    throw new Error(`No chunks generated from ${targetPath}`);
+  }
+
+  const db = createDbClient({ url: dbUrl, authToken: dbToken });
+  await db.transaction(async (tx) => {
+    await tx.run(sql`DELETE FROM rag_chunks WHERE topic = ${ingestTopic}`);
+
+    const scopedDb = tx as unknown as ReturnType<typeof createDbClient>;
+    for (const chunk of chunks) {
+      await insertRagChunk(scopedDb, {
+        topic: ingestTopic,
+        content: chunk.content,
+        metadata: chunk.metadata,
+        embedding: chunk.embedding,
+      });
+    }
+  });
+
+  console.log(`Ingested ${chunks.length} chunks into rag_chunks for topic '${ingestTopic}'.`);
+}
+
+if (import.meta.main) {
+  ingestCli().catch((err) => {
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  });
 }

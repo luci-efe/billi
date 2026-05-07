@@ -20,16 +20,25 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+const BILLI_STAGING_PAGES_HOST_RE = /^billi-web-staging(?:-[a-z0-9]+)?\.pages\.dev$/;
+
+function isAllowedCorsOrigin(origin: string): boolean {
+  if (origin === 'http://localhost:5173') return true;
+
+  try {
+    const { protocol, hostname } = new URL(origin);
+    return protocol === 'https:' && BILLI_STAGING_PAGES_HOST_RE.test(hostname);
+  } catch {
+    return false;
+  }
+}
+
 // CORS middleware — must run before auth so preflight (OPTIONS) replies are
-// sent without requiring authentication.  In production the allowed origin
-// can be injected via env; here we keep a sensible default set.
+// sent without requiring authentication. Keep origins tight to local dev and
+// Billi staging Pages hosts that call the staging Worker cross-origin.
 app.use('/api/*', cors({
   origin: (origin) => {
-    const allowed = [
-      'http://localhost:5173',
-      'https://billi-web-staging-6pj.pages.dev',
-    ];
-    if (allowed.includes(origin)) return origin;
+    if (isAllowedCorsOrigin(origin)) return origin;
     return null;
   },
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -108,9 +117,12 @@ app.use('/api/*', async (c, next) => {
       if (!auth?.userId) {
         return c.json({ error: 'unauthenticated' }, 401);
       }
+      const userRepo = new UserRepository(db);
+      const email = (auth.sessionClaims?.email as string | undefined) ?? '';
+      await userRepo.upsert({ id: auth.userId, email });
       c.set('userId', auth.userId);
       c.set('db', db);
-      c.set('userRepo', new UserRepository(db));
+      c.set('userRepo', userRepo);
       await next();
     }
   }

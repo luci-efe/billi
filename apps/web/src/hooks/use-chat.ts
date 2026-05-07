@@ -7,37 +7,58 @@ export interface Message {
   content: string;
   timestamp: string;
 }
+const CHAT_MESSAGES_STORAGE_KEY = 'billi_chat_messages';
+const CHAT_THREAD_STORAGE_KEY = 'billi_chat_thread_id';
+
+function makeAssistantGreeting(): Message {
+  return {
+    id: crypto.randomUUID(),
+    role: 'assistant',
+    content: '¡Hola! Soy Billi, tu asistente financiero. ¿En qué puedo ayudarte hoy?',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  };
+}
+
+function makeMessage(role: Message['role'], content: string): Message {
+  return {
+    id: crypto.randomUUID(),
+    role,
+    content,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  };
+}
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: '¡Hola! Soy Billi, tu asistente financiero. ¿En qué puedo ayudarte hoy?',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([makeAssistantGreeting()]);
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
 
-  // Load threadId from localStorage on mount
   useEffect(() => {
-    const savedThreadId = localStorage.getItem('billi_chat_thread_id');
+    const savedThreadId = localStorage.getItem(CHAT_THREAD_STORAGE_KEY);
+    const savedMessages = localStorage.getItem(CHAT_MESSAGES_STORAGE_KEY);
     if (savedThreadId) {
       setThreadId(savedThreadId);
     }
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages) as Message[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      } catch {
+        localStorage.removeItem(CHAT_MESSAGES_STORAGE_KEY);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(CHAT_MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
 
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
+    const userMessage = makeMessage('user', content);
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -55,24 +76,16 @@ export function useChat() {
       
       if (data.threadId && data.threadId !== threadId) {
         setThreadId(data.threadId);
-        localStorage.setItem('billi_chat_thread_id', data.threadId);
+        localStorage.setItem(CHAT_THREAD_STORAGE_KEY, data.threadId);
       }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
+      const assistantMessage = makeMessage('assistant', data.text);
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
+      const errorMessage = makeMessage(
+        'assistant',
+        'Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo.'
+      );
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
@@ -80,14 +93,10 @@ export function useChat() {
   };
 
   const clearChat = () => {
-    localStorage.removeItem('billi_chat_thread_id');
+    localStorage.removeItem(CHAT_THREAD_STORAGE_KEY);
+    localStorage.removeItem(CHAT_MESSAGES_STORAGE_KEY);
     setThreadId(null);
-    setMessages([{
-      id: '1',
-      role: 'assistant',
-      content: '¡Hola! Soy Billi, tu asistente financiero. ¿En qué puedo ayudarte hoy?',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }]);
+    setMessages([makeAssistantGreeting()]);
   };
 
   return { messages, isLoading, sendMessage, clearChat };

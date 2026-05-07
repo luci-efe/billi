@@ -27,7 +27,7 @@ const workflowInputSchema = z.object({
 });
 
 const DEFAULT_LLM_MODEL = 'openai/gpt-4o-mini';
-const DEFAULT_VISION_MODEL = 'openai/gpt-4o-mini';
+const DEFAULT_VISION_MODEL = 'google/gemini-3-flash-preview';
 
 const ALLOWED_CATEGORIES = [
   'Comida',
@@ -124,14 +124,14 @@ Reglas:
 - Responde sólo con el JSON pedido.`;
 
 function normalizeDate(date: string | null): string {
-  const fallbackIso = new Date().toISOString();
-  if (!date) return fallbackIso;
-  // Accept either YYYY-MM-DD or full ISO. Anchor at UTC midday to avoid TZ flips.
+  const fallback = TODAY();
+  if (!date) return fallback;
   const ymdMatch = /^\d{4}-\d{2}-\d{2}$/.test(date);
-  const candidate = ymdMatch ? `${date}T12:00:00.000Z` : date;
-  const ts = Date.parse(candidate);
-  if (Number.isNaN(ts)) return fallbackIso;
-  return new Date(ts).toISOString();
+  if (ymdMatch) return date;
+
+  const ts = Date.parse(date);
+  if (Number.isNaN(ts)) return fallback;
+  return new Date(ts).toISOString().slice(0, 10);
 }
 
 function buildResult(raw: RawExtraction): z.infer<typeof captureOutputSchema> {

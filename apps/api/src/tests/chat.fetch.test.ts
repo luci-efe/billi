@@ -103,6 +103,26 @@ describe('POST /api/ai/chat', () => {
     expect(body.text).toMatch(/\$\s?0\.00/);
   });
 
+  it('answers category-specific spending questions with a filtered expense summary', async () => {
+    mockChatJSON({ injection: false, reason: '' });
+    mockChatJSON({ intent: 'personal_history', confidence: 0.9 });
+
+    const res = await SELF.fetch('http://example.com/api/ai/chat', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer user_test',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ message: '¿Cuánto gasté en comida este mes?' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { intent: string; text: string };
+    expect(body.intent).toBe('personal_history');
+    expect(body.text).toContain('Tus egresos en comida de este mes suman');
+    expect(body.text).toMatch(/\$\s?0\.00/);
+  });
+
   it('flags injection even without the regex via the LLM guardrail', async () => {
     // Regex misses, but the guardrail LLM says injection=true.
     mockChatJSON({ injection: true, reason: 'attempted prompt leak' });

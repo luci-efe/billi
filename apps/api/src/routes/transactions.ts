@@ -40,25 +40,24 @@ router.post("/", zValidator("json", newTransactionSchema, (result, c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const body = c.req.valid("json");
-  const isTest = __BILLI_TEST__;
 
   const id = ulid();
   // Allow client to specify source (e.g. 'image', 'chat') if provided;
   // default to 'form' for manual entries.
-  // @ts-expect-error - exactOptionalPropertyTypes vs note?: string | null
   const input: NewTransaction & { id: string } = {
-    ...body,
     id,
-    source: body.source || 'form',
+    type: body.type,
+    amountCents: body.amountCents,
+    category: body.category,
+    occurredAt: body.occurredAt,
+    source: body.source ?? 'form',
   };
+  if (body.currency !== undefined) input.currency = body.currency;
+  if (body.sourceRef !== undefined) input.sourceRef = body.sourceRef;
+  if (body.note !== undefined) input.note = body.note;
   
-  try {
-    await createTransaction(db, userId, input);
-    return c.json({ id }, 201);
-  } catch (err) {
-    if (isTest) return c.json({ id }, 201);
-    throw err;
-  }
+  await createTransaction(db, userId, input);
+  return c.json({ id }, 201);
 });
 
 // GET /api/transactions
@@ -66,7 +65,6 @@ router.get("/", zValidator("query", listFilterSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const query = c.req.valid("query");
-  const isTest = __BILLI_TEST__;
 
   const filter: ListFilter = {};
   if (query.type) filter.type = query.type as "income" | "expense";
@@ -76,13 +74,8 @@ router.get("/", zValidator("query", listFilterSchema), async (c) => {
   if (query.limit !== undefined) filter.limit = query.limit;
   if (query.cursor) filter.cursor = query.cursor;
 
-  try {
-    const result = await listTransactions(db, userId, filter);
-    return c.json(result);
-  } catch (err) {
-    if (isTest) return c.json({ items: [] });
-    throw err;
-  }
+  const result = await listTransactions(db, userId, filter);
+  return c.json(result);
 });
 
 // GET /api/transactions/export
@@ -153,18 +146,12 @@ router.get("/:id", zValidator("param", transactionIdParamSchema), async (c) => {
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = __BILLI_TEST__;
 
-  try {
-    const tx = await getTransactionById(db, id, userId);
-    if (!tx) {
-      return c.json({ error: "not_found" }, 404);
-    }
-    return c.json(tx);
-  } catch (err) {
-    if (isTest) return c.json({ error: "not_found" }, 404);
-    throw err;
+  const tx = await getTransactionById(db, id, userId);
+  if (!tx) {
+    return c.json({ error: "not_found" }, 404);
   }
+  return c.json(tx);
 });
 
 // PATCH /api/transactions/:id
@@ -181,7 +168,6 @@ router.patch(
     const db = c.get("db");
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const isTest = __BILLI_TEST__;
 
     const patch: Partial<NewTransaction> = {};
     if (body.type) patch.type = body.type as "income" | "expense";
@@ -189,18 +175,13 @@ router.patch(
     if (body.currency) patch.currency = body.currency;
     if (body.category) patch.category = body.category;
     if (body.occurredAt !== undefined) patch.occurredAt = body.occurredAt;
-    if (body.note) patch.note = body.note;
+    if (body.note !== undefined) patch.note = body.note;
 
-    try {
-      const updated = await updateTransaction(db, id, userId, patch);
-      if (!updated) {
-        return c.json({ error: "not_found" }, 404);
-      }
-      return c.json(updated);
-    } catch (err) {
-      if (isTest) return c.json({ error: "not_found" }, 404);
-      throw err;
+    const updated = await updateTransaction(db, id, userId, patch);
+    if (!updated) {
+      return c.json({ error: "not_found" }, 404);
     }
+    return c.json(updated);
   }
 );
 
@@ -209,18 +190,12 @@ router.delete("/:id", zValidator("param", transactionIdParamSchema), async (c) =
   const userId = c.get("userId");
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const isTest = __BILLI_TEST__;
 
-  try {
-    const deleted = await deleteTransaction(db, id, userId);
-    if (!deleted) {
-      return c.json({ error: "not_found" }, 404);
-    }
-    return c.body(null, 204);
-  } catch (err) {
-    if (isTest) return c.json({ error: "not_found" }, 404);
-    throw err;
+  const deleted = await deleteTransaction(db, id, userId);
+  if (!deleted) {
+    return c.json({ error: "not_found" }, 404);
   }
+  return c.body(null, 204);
 });
 
 export default router;

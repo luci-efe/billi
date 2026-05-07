@@ -38,7 +38,7 @@ router.post('/', zValidator('json', captureRequestSchema), async (c) => {
   requestContext.set('ownerId', userId);
   requestContext.set('openRouterApiKey', openRouterApiKey || 'mock_key');
   requestContext.set('BILLI_LLM_MODEL', c.env.BILLI_LLM_MODEL ?? 'openai/gpt-4o-mini');
-  requestContext.set('BILLI_VISION_MODEL', c.env.BILLI_VISION_MODEL ?? 'openai/gpt-4o-mini');
+  requestContext.set('BILLI_VISION_MODEL', c.env.BILLI_VISION_MODEL ?? 'google/gemini-3-flash-preview');
 
   try {
     const mastra = await getMastra(c.env);

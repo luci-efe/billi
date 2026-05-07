@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "pretest": "bun scripts/patch-mastra.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "rag:ingest": "bun src/scripts/rag/ingest.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",

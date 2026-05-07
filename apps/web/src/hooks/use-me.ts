@@ -11,11 +11,11 @@ export interface User {
   consentVersion: number | null;
 }
 
-export function useMe() {
+export function useMe(enabled: boolean = true) {
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
   
   const [data, setData] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(() => !authLoaded || (authLoaded && !!isSignedIn));
+  const [isLoading, setIsLoading] = useState<boolean>(() => !authLoaded || (authLoaded && !!isSignedIn && enabled));
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -27,6 +27,10 @@ export function useMe() {
       return;
     }
 
+    if (!enabled) {
+      setIsLoading(true);
+      return;
+    }
     async function fetchMe() {
       try {
         setIsLoading(true);
@@ -49,7 +53,7 @@ export function useMe() {
     }
 
     fetchMe();
-  }, [isSignedIn, authLoaded]);
+  }, [isSignedIn, authLoaded, enabled]);
 
   return {
     data,

@@ -64,7 +64,8 @@ export default function Settings() {
     setIsAcceptingConsent(true);
     try {
       const res = await apiClient.post("/api/me/consent", {
-        body: JSON.stringify({ version: 1, acceptedAt: Date.now() }),
+        version: 1,
+        acceptedAt: Math.floor(Date.now() / 1000),
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -93,11 +94,11 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="bg-slate-950 border border-slate-800">
-          <TabsTrigger value="profile" className="data-[state=active]:bg-slate-800">Perfil</TabsTrigger>
-          <TabsTrigger value="plan" className="data-[state=active]:bg-slate-800">Suscripción</TabsTrigger>
-          <TabsTrigger value="notifications" className="data-[state=active]:bg-slate-800">Notificaciones</TabsTrigger>
-          <TabsTrigger value="security" className="data-[state=active]:bg-slate-800">Seguridad</TabsTrigger>
+        <TabsList className="w-full max-w-full overflow-x-auto border border-slate-800 bg-slate-950 sm:w-fit">
+          <TabsTrigger value="profile" className="text-slate-200 hover:text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white">Perfil</TabsTrigger>
+          <TabsTrigger value="plan" className="text-slate-200 hover:text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white">Suscripción</TabsTrigger>
+          <TabsTrigger value="notifications" className="text-slate-200 hover:text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white">Notificaciones</TabsTrigger>
+          <TabsTrigger value="security" className="text-slate-200 hover:text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white">Seguridad</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -119,21 +120,21 @@ export default function Settings() {
                 )}
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-white">{user?.fullName || "Usuario Billi"}</p>
-                  <p className="text-xs text-slate-500">Gestionado vía Clerk Auth</p>
+                  <p className="text-xs text-slate-400">Gestionado vía Clerk Auth</p>
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Nombre</Label>
-                  <Input id="firstName" value={user?.firstName || ""} disabled className="bg-slate-950 border-slate-800 opacity-70" />
+                  <Input id="firstName" value={user?.firstName || ""} disabled className="border-slate-800 bg-slate-950 text-slate-300 opacity-100 disabled:opacity-100" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Apellido</Label>
-                  <Input id="lastName" value={user?.lastName || ""} disabled className="bg-slate-950 border-slate-800 opacity-70" />
+                  <Input id="lastName" value={user?.lastName || ""} disabled className="border-slate-800 bg-slate-950 text-slate-300 opacity-100 disabled:opacity-100" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Correo Electrónico</Label>
-                  <Input id="email" value={user?.primaryEmailAddress?.emailAddress || ""} disabled className="bg-slate-950 border-slate-800 opacity-70" />
+                  <Input id="email" value={user?.primaryEmailAddress?.emailAddress || ""} disabled className="border-slate-800 bg-slate-950 text-slate-300 opacity-100 disabled:opacity-100" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="rfc">RFC (Opcional para IA Fiscal)</Label>
@@ -185,25 +186,25 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border border-slate-800 bg-slate-950/50">
-                <div className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-950/50 p-4">
+                <div className="min-w-0 space-y-1">
                   <p className="text-sm font-medium text-white">
                     {me?.consentAccepted ? "Consentimiento aceptado" : "Consentimiento pendiente"}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-400">
                     {me?.consentAccepted
                       ? `Versión ${me.consentVersion ?? 1} aceptada`
                       : "Debes aceptar el consentimiento para acceder a todas las funciones."}
                   </p>
                 </div>
-                <div>
+                <div className="shrink-0">
                   {me?.consentAccepted ? (
-                    <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                    <div className="flex items-center gap-2 text-sm font-medium text-emerald-400">
                       <CheckCircle2 className="h-4 w-4" />
                       Activo
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 text-amber-400 text-sm font-medium">
+                    <div className="flex items-center gap-2 text-sm font-medium text-amber-400">
                       <AlertCircle className="h-4 w-4" />
                       Pendiente
                     </div>
@@ -231,12 +232,12 @@ export default function Settings() {
                 <CardDescription className="text-slate-400">Tu plan actual</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-3xl font-bold text-white">$0 <span className="text-sm font-normal text-slate-500">/mes</span></div>
-                <ul className="space-y-2 text-sm text-slate-400">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-500" /> Registro manual de movimientos</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-500" /> Dashboard básico</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-500" /> 10 facturas al mes</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-500" /> Consultas limitadas a Chat Billi</li>
+                <div className="text-3xl font-bold text-white">$0 <span className="text-sm font-normal text-slate-400">/mes</span></div>
+                <ul className="space-y-2 text-sm text-slate-300">
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-400" /> Registro manual de movimientos</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-400" /> Dashboard básico</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-400" /> 10 facturas al mes</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-slate-400" /> Consultas limitadas a Chat Billi</li>
                 </ul>
               </CardContent>
               <CardFooter>
@@ -257,7 +258,7 @@ export default function Settings() {
                 <CardDescription className="text-slate-400">Desbloquea todo el poder de la IA</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-3xl font-bold text-white">$99 <span className="text-sm font-normal text-slate-500">/mes</span></div>
+                <div className="text-3xl font-bold text-white">$99 <span className="text-sm font-normal text-slate-400">/mes</span></div>
                 <ul className="space-y-2 text-sm text-slate-300">
                   <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-indigo-400" /> Categorización automática con IA</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-indigo-400" /> Lectura de recibos ilimitada</li>
@@ -286,7 +287,7 @@ export default function Settings() {
                   <div className="h-8 w-12 bg-slate-800 rounded flex items-center justify-center text-xs font-bold text-slate-400">VISA</div>
                   <div>
                     <p className="text-sm font-medium text-white">Terminación 4242</p>
-                    <p className="text-xs text-slate-500">Expira 12/28</p>
+                    <p className="text-xs text-slate-400">Expira 12/28</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" className="text-indigo-400">Editar</Button>
@@ -307,7 +308,7 @@ export default function Settings() {
               <div className="flex items-center justify-between py-2 border-b border-slate-800">
                 <div>
                   <p className="text-sm font-medium text-white">Resumen Semanal</p>
-                  <p className="text-xs text-slate-500">Recibe un reporte de tus gastos cada domingo.</p>
+                  <p className="text-xs text-slate-400">Recibe un reporte de tus gastos cada domingo.</p>
                 </div>
                 {/* Simulated switch */}
                 <div className="w-9 h-5 bg-indigo-600 rounded-full relative cursor-pointer">
@@ -317,7 +318,7 @@ export default function Settings() {
               <div className="flex items-center justify-between py-2 border-b border-slate-800">
                 <div>
                   <p className="text-sm font-medium text-white">Alertas de Presupuesto</p>
-                  <p className="text-xs text-slate-500">Avisos cuando estés cerca de tu límite mensual.</p>
+                  <p className="text-xs text-slate-400">Avisos cuando estés cerca de tu límite mensual.</p>
                 </div>
                 <div className="w-9 h-5 bg-indigo-600 rounded-full relative cursor-pointer">
                   <div className="w-4 h-4 bg-white rounded-full absolute right-0.5 top-0.5" />
@@ -326,7 +327,7 @@ export default function Settings() {
               <div className="flex items-center justify-between py-2">
                 <div>
                   <p className="text-sm font-medium text-white">Recordatorios Fiscales</p>
-                  <p className="text-xs text-slate-500">Avisos sobre fechas importantes del SAT.</p>
+                  <p className="text-xs text-slate-400">Avisos sobre fechas importantes del SAT.</p>
                 </div>
                 <div className="w-9 h-5 bg-slate-700 rounded-full relative cursor-pointer">
                   <div className="w-4 h-4 bg-white rounded-full absolute left-0.5 top-0.5" />
@@ -367,14 +368,14 @@ export default function Settings() {
               </div>
 
               <div className="pt-4 border-t border-slate-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-rose-400 flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <h4 className="flex items-center gap-2 text-sm font-medium text-rose-400">
                       <AlertCircle className="h-4 w-4" /> Zona de Peligro
                     </h4>
-                    <p className="text-xs text-slate-500 mt-1">Eliminar permanentemente tu cuenta y todos tus datos.</p>
+                    <p className="mt-1 text-xs text-slate-400">Eliminar permanentemente tu cuenta y todos tus datos.</p>
                   </div>
-                  <Button variant="destructive" className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-400">
+                  <Button variant="destructive" className="shrink-0 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-400">
                     Eliminar Cuenta
                   </Button>
                 </div>

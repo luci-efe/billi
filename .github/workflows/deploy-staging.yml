@@ -78,7 +78,7 @@ jobs:
       - name: Post Pages URL to summary
         run: |
           echo "## Deployed to" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Web (Pages, production-branch=dev):** https://billi-web-staging-6pj.pages.dev" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Branch alias:** https://dev.billi-web-staging-6pj.pages.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Web (Pages project):** https://billi-web-staging.pages.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Branch alias:** https://dev.billi-web-staging.pages.dev" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "> Per-commit preview URL is also in the Wrangler deploy output above." >> "$GITHUB_STEP_SUMMARY"

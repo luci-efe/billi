@@ -20,6 +20,7 @@ export interface CaptureResult {
 export interface CaptureInput {
   message?: string;
   imageUrl?: string;
+  sourceHint?: 'chat' | 'image' | 'text';
 }
 
 /**
@@ -37,7 +38,7 @@ export function useCapture() {
   const [lowConfidenceFields, setLowConfidenceFields] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [lastSource, setLastSource] = useState<'image' | 'text' | null>(null);
+  const [lastSource, setLastSource] = useState<'chat' | 'image' | 'text' | null>(null);
 
   const reset = useCallback(() => {
     setProposal(null);
@@ -57,7 +58,9 @@ export function useCapture() {
     setIsLoading(true);
     setError(null);
 
-    const source: 'image' | 'text' = input.imageUrl ? 'image' : 'text';
+    const source: 'chat' | 'image' | 'text' = input.imageUrl
+      ? 'image'
+      : input.sourceHint ?? 'text';
     setLastSource(source);
 
     try {
@@ -92,13 +95,22 @@ export function useCapture() {
     setIsLoading(true);
     setError(null);
     try {
-      const occurredAt = Math.floor(new Date(next.date).getTime() / 1000);
+      const parseOccurredAt = (value: string): number => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          const [year, month, day] = value.split('-').map(Number);
+          return Math.floor(new Date(year, month - 1, day, 0, 0, 0, 0).getTime() / 1000);
+        }
+
+        const ts = Date.parse(value);
+        return Number.isNaN(ts) ? Math.floor(Date.now() / 1000) : Math.floor(ts / 1000);
+      };
+
       const body = {
         type: next.type,
         amountCents: next.amountCents,
         category: next.category,
         note: next.note ?? next.merchant ?? '',
-        occurredAt: Number.isFinite(occurredAt) ? occurredAt : Math.floor(Date.now() / 1000),
+        occurredAt: parseOccurredAt(next.date),
         source: lastSource ?? 'text',
       };
       const res = await apiClient.post('/api/transactions', body);

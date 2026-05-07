@@ -1,13 +1,12 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { useUser, useClerk, useAuth } from "@clerk/clerk-react";
-import { useEffect } from "react";
+import { useUser, useClerk, useAuth, UserButton } from "@clerk/clerk-react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Receipt,
   MessageSquare,
   Settings,
   LogOut,
-  User,
   PlusCircle,
   PiggyBank
 } from "lucide-react";
@@ -29,19 +28,54 @@ export default function RootLayout() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { signOut } = useClerk();
-  const { getToken, isSignedIn } = useAuth();
-  const { data: me } = useMe();
+  const { getToken, isSignedIn, isLoaded: authLoaded } = useAuth();
+  const [isApiAuthReady, setIsApiAuthReady] = useState(() => (authLoaded ? !isSignedIn : false));
+  const { data: me } = useMe(isApiAuthReady);
 
   // SEC-NEW-11: Sync Clerk token to the apiClient for cross-origin staging/production calls.
   useEffect(() => {
-    if (isSignedIn) {
-      getToken().then((token) => {
-        apiClient.setAuthToken(token);
-      });
-    } else {
-      apiClient.setAuthToken(null);
+    let isCurrent = true;
+
+    if (!authLoaded) {
+      setIsApiAuthReady(false);
+      return () => {
+        isCurrent = false;
+      };
     }
-  }, [isSignedIn, getToken]);
+
+    if (!isSignedIn) {
+      apiClient.setAuthTokenProvider(null);
+      apiClient.setAuthToken(null);
+      setIsApiAuthReady(true);
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    setIsApiAuthReady(false);
+    apiClient.setAuthTokenProvider(() => getToken());
+
+    getToken()
+      .then((token) => {
+        if (!isCurrent) return;
+        apiClient.setAuthToken(token ?? null);
+        setIsApiAuthReady(true);
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        apiClient.setAuthTokenProvider(null);
+        apiClient.setAuthToken(null);
+        setIsApiAuthReady(true);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [authLoaded, isSignedIn, getToken]);
+
+  if (authLoaded && isSignedIn && !isApiAuthReady) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">Sincronizando sesión...</div>;
+  }
 
   return (
     <div data-testid="root-layout" className="flex min-h-screen w-full bg-slate-950 text-slate-50 antialiased">
@@ -77,13 +111,14 @@ export default function RootLayout() {
 
         <div className="mt-auto border-t border-slate-800 p-4">
           <div className="flex items-center gap-3 px-2 py-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400">
-              {user?.imageUrl ? (
-                <img src={user.imageUrl} className="h-full w-full rounded-full" alt={user.fullName || "User"} />
-              ) : (
-                <User className="h-4 w-4" />
-              )}
-            </div>
+            <UserButton
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: "h-8 w-8",
+                  userButtonBox: "h-8 w-8",
+                },
+              }}
+            />
             <div className="flex-1 overflow-hidden">
               <p className="truncate text-xs font-medium">{user?.fullName || user?.primaryEmailAddress?.emailAddress || "Usuario"}</p>
               <p className="truncate text-[10px] text-slate-500">{me?.consentAccepted ? "Plan Beta" : "Pendiente Consentimiento"}</p>
@@ -114,6 +149,16 @@ export default function RootLayout() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            <div className="hidden sm:block">
+              <UserButton
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: "h-8 w-8",
+                    userButtonBox: "h-8 w-8",
+                  },
+                }}
+              />
+            </div>
             <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold" onClick={() => navigate('/transactions', { state: { openCreate: true } })}>
               <PlusCircle className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Nuevo Movimiento</span>

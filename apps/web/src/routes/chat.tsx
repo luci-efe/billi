@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Send,
   Bot,
@@ -7,7 +7,9 @@ import {
   ArrowRight,
   Loader2,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  ImagePlus,
+  X
 } from "lucide-react";
 import { 
   Card, 
@@ -17,6 +19,14 @@ import {
   CardDescription,
   CardFooter
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -27,52 +37,110 @@ import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
 
 const suggestedQuestions = [
-  "¿Cuánto gasté en comida este mes?",
-  "¿Cómo puedo ahorrar más?",
-  "Explícame qué es el ISR",
-  "Registra que gasté 200 pesos en gasolina",
+  { label: "¿Cuánto gasté en comida este mes?", action: "chat" as const },
+  { label: "¿Cómo puedo ahorrar más?", action: "chat" as const },
+  { label: "¿Qué es el SAT?", action: "chat" as const },
+  { label: "Registra que gasté 200 pesos en gasolina", action: "capture" as const },
 ];
+
+const MAX_CAPTURE_IMAGE_BYTES = 5 * 1024 * 1024;
+
+type PendingCaptureImage = {
+  dataUrl: string;
+  name: string;
+  size: number;
+};
+
+function isNearBottom(element: HTMLElement, threshold: number = 48): boolean {
+  return element.scrollHeight - element.scrollTop - element.clientHeight <= threshold;
+}
 
 export default function Chat() {
   const { messages, isLoading, sendMessage, clearChat } = useChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const capture = useCapture();
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [shouldStickToBottom, setShouldStickToBottom] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [pendingImage, setPendingImage] = useState<PendingCaptureImage | null>(null);
 
+  const isBusy = isLoading || capture.isLoading;
+
+  const scrollToBottom = () => {
+    const scrollContainer = scrollRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (!scrollContainer) return;
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    setShouldStickToBottom(true);
+    setShowScrollButton(false);
+  };
 
   useEffect(() => {
-    if (scrollRef.current) {
-      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
-      }
-    }
-  }, [messages, isLoading]);
+    const scrollContainer = scrollRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (!scrollContainer) return;
 
-  const handleSend = () => {
-    if (!input.trim() || isLoading) return;
-    sendMessage(input);
-    setInput("");
+    const handleScroll = () => {
+      const pinned = isNearBottom(scrollContainer);
+      setShouldStickToBottom(pinned);
+      setShowScrollButton(!pinned);
+    };
+
+    handleScroll();
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (shouldStickToBottom) {
+      requestAnimationFrame(scrollToBottom);
+    } else {
+      setShowScrollButton(true);
+    }
+  }, [messages, isLoading, shouldStickToBottom]);
+
+  const composerHint = useMemo(() => {
+    if (pendingImage) return "Adjuntaste una imagen. Usa Analizar y registrar para extraer el movimiento.";
+    return "Billi puede cometer errores. Verifica la información importante.";
+  }, [pendingImage]);
+
+  const handleSend = async () => {
+    const prompt = input.trim();
+    if (!prompt || isBusy) return;
+    try {
+      await sendMessage(prompt);
+      setInput("");
+    } catch {
+      // useChat already appends a friendly assistant error message
+    }
   };
 
   const handleClearChat = () => {
-    if (confirm("¿Estás seguro de que quieres borrar la conversación?")) {
-      clearChat();
-      toast.success("Conversación reiniciada");
-    }
+    setConfirmClearOpen(true);
   };
 
-  const handleOpenCapture = async () => {
-    const prompt = input.trim();
-    if (!prompt) {
-      toast.info("Escribe lo que quieres registrar (p. ej. 'gast\u00e9 200 en gasolina')");
+  const handleConfirmClearChat = () => {
+    clearChat();
+    toast.success("Conversación reiniciada");
+    setPendingImage(null);
+    setConfirmClearOpen(false);
+  };
+
+  const handleOpenCapture = async (seedMessage?: string) => {
+    const prompt = (seedMessage ?? input).trim();
+    if (!prompt && !pendingImage) {
+      toast.info("Escribe lo que quieres registrar o adjunta una imagen para analizarla.");
       return;
     }
     setCaptureOpen(true);
-    const result = await capture.submitCapture({ message: prompt });
+    const result = await capture.submitCapture({
+      message: prompt || undefined,
+      imageUrl: pendingImage?.dataUrl,
+      sourceHint: pendingImage ? 'image' : 'chat',
+    });
     if (result.error || !result.proposal) {
-      toast.error("No pudimos generar una propuesta. Revisa el mensaje.");
+      toast.error("No pudimos generar una propuesta. Revisa el mensaje o la imagen.");
     }
   };
 
@@ -80,12 +148,57 @@ export default function Chat() {
     if (!next) return;
     try {
       await capture.confirmProposal(next);
-      toast.success("Movimiento registrado con \u00e9xito");
+      toast.success("Movimiento registrado con éxito");
       setCaptureOpen(false);
       setInput("");
+      setPendingImage(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al registrar");
     }
+  };
+
+  const handleCaptureImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Solo puedes adjuntar imágenes JPG, PNG o WebP.");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_CAPTURE_IMAGE_BYTES) {
+      toast.error("La imagen excede el límite de 5MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(reader.error ?? new Error("No se pudo leer la imagen."));
+      reader.readAsDataURL(file);
+    }).catch((err) => {
+      toast.error(err instanceof Error ? err.message : "No se pudo leer la imagen.");
+      return null;
+    });
+
+    if (!dataUrl) {
+      e.target.value = "";
+      return;
+    }
+
+    setPendingImage({ dataUrl, name: file.name, size: file.size });
+    toast.success("Imagen lista para analizar.");
+    e.target.value = "";
+  };
+
+  const handleSuggestedQuestion = async (question: string, action: "chat" | "capture") => {
+    if (action === "capture") {
+      setInput(question);
+      await handleOpenCapture(question);
+      return;
+    }
+    setInput("");
+    await sendMessage(question);
   };
 
 
@@ -132,8 +245,9 @@ export default function Chat() {
           <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((message) => {
-                const isTransactionSuccess = message.role === 'assistant' &&
-                  (message.content.includes('éxito') || message.content.includes('registrada'));
+                const isTransactionSuccess =
+                  message.role === "assistant" &&
+                  (message.content.includes("éxito") || message.content.includes("registrada"));
 
                 return (
                   <div
@@ -141,66 +255,133 @@ export default function Chat() {
                     className={cn(
                       "flex max-w-[80%] flex-col gap-2 rounded-2xl p-4 text-sm",
                       message.role === "assistant"
-                        ? "self-start bg-slate-800 text-slate-100 rounded-tl-none"
-                        : "self-end bg-indigo-600 text-white rounded-tr-none ml-auto",
+                        ? "bg-slate-800 text-slate-100 rounded-tl-none"
+                        : "ml-auto bg-indigo-600 text-white rounded-tr-none",
                       isTransactionSuccess ? "border border-emerald-500/30 bg-emerald-500/5" : ""
                     )}
                   >
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="mb-1 flex items-center gap-2">
                       {message.role === "assistant" ? (
                         <Bot className="h-3 w-3 text-indigo-400" />
                       ) : (
                         <User className="h-3 w-3 text-indigo-200" />
                       )}
-                      <span className="text-[10px] opacity-70 font-medium">
+                      <span className="text-[10px] font-medium opacity-70">
                         {message.role === "assistant" ? "Billi" : "Tú"} • {message.timestamp}
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      {isTransactionSuccess && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />}
+                      {isTransactionSuccess && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />}
                       <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
                     </div>
                   </div>
                 );
               })}
               {isLoading && (
-                <div className="flex self-start bg-slate-800 text-slate-100 rounded-2xl rounded-tl-none p-4 text-sm items-center gap-2">
+                <div className="flex self-start rounded-2xl rounded-tl-none bg-slate-800 p-4 text-sm text-slate-100 items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
                   <span className="text-xs text-slate-400">Billi está procesando...</span>
                 </div>
               )}
             </div>
           </ScrollArea>
+          {showScrollButton && (
+            <div className="pointer-events-none absolute bottom-28 right-8 z-10 flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                onClick={scrollToBottom}
+                className="pointer-events-auto bg-slate-800 text-slate-100 hover:bg-slate-700"
+              >
+                Ver mensajes recientes
+              </Button>
+            </div>
+          )}
 
           <CardFooter className="border-t border-slate-800 bg-slate-900/50 p-4 shrink-0">
             <div className="flex w-full flex-col gap-3">
+              {pendingImage && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-3 text-xs text-indigo-100">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={pendingImage.dataUrl}
+                      alt={pendingImage.name}
+                      className="h-12 w-12 rounded-md object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{pendingImage.name}</p>
+                      <p className="text-[10px] text-indigo-200/80">
+                        Imagen lista para extraer el movimiento ({(pendingImage.size / 1024).toFixed(1)} KB)
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-indigo-100 hover:bg-indigo-500/20 hover:text-white"
+                    onClick={() => setPendingImage(null)}
+                    aria-label="Quitar imagen"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input
                   placeholder="Pregunta algo a Billi..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  disabled={isLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  disabled={isBusy}
                   className="bg-slate-950 border-slate-800 focus-visible:ring-indigo-500 text-slate-100 placeholder:text-slate-500"
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="sr-only"
+                  onChange={(e) => void handleCaptureImageChange(e)}
                 />
                 <Button
                   type="button"
-                  onClick={handleOpenCapture}
-                  disabled={capture.isLoading || !input.trim()}
-                  aria-label="Registrar movimiento"
-                  title="Registrar movimiento"
+                  variant="outline"
+                  className="border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isBusy}
+                  aria-label="Adjuntar imagen"
+                  title="Adjuntar imagen"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => void handleOpenCapture()}
+                  disabled={capture.isLoading || (!input.trim() && !pendingImage)}
+                  aria-label="Analizar y registrar movimiento"
+                  title="Analizar y registrar movimiento"
                   variant="outline"
                   className="border-slate-800 bg-slate-950 text-indigo-300 hover:bg-slate-800 hover:text-indigo-200"
                 >
                   {capture.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 </Button>
-                <Button onClick={handleSend} disabled={isLoading || !input.trim()} className="bg-indigo-600 hover:bg-indigo-500">
+                <Button
+                  type="button"
+                  onClick={() => void handleSend()}
+                  disabled={isBusy || !input.trim()}
+                  className="bg-indigo-600 hover:bg-indigo-500"
+                >
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
               <div className="flex items-center gap-2 text-[10px] text-slate-500">
                 <span className="flex-1" />
-                <span>Billi puede cometer errores. Verifica la información importante.</span>
+                <span>{composerHint}</span>
               </div>
             </div>
           </CardFooter>
@@ -213,17 +394,14 @@ export default function Chat() {
               <CardTitle className="text-sm font-semibold text-white">Preguntas sugeridas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {suggestedQuestions.map((q) => (
+              {suggestedQuestions.map((item) => (
                 <button
-                  key={q}
-                  disabled={isLoading}
-                  onClick={() => {
-                    setInput(q);
-                    sendMessage(q);
-                  }}
+                  key={item.label}
+                  disabled={isBusy}
+                  onClick={() => void handleSuggestedQuestion(item.label, item.action)}
                   className="flex w-full items-center justify-between rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-left text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 disabled:opacity-50"
                 >
-                  {q}
+                  {item.label}
                   <ArrowRight className="h-3 w-3" />
                 </button>
               ))}
@@ -242,6 +420,34 @@ export default function Chat() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Borrar conversación</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Esta acción eliminará los mensajes guardados en este dispositivo. No se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white"
+              onClick={() => setConfirmClearOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="bg-rose-600 text-white hover:bg-rose-500"
+              onClick={handleConfirmClearChat}
+            >
+              Borrar chat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <CaptureProposalReview
         open={captureOpen}

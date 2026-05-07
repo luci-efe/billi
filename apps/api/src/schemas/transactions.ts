@@ -7,7 +7,7 @@ export const newTransactionSchema = z.object({
   category: z.string().min(1).max(32),
   occurredAt: z.number().int().positive(),
   note: z.string().max(280).optional().nullable(),
-  source: z.enum(["form", "chat", "image", "text", "recurring"]).optional(),
+  source: z.enum(["form", "text", "voice", "image", "chat"]).optional(),
   sourceRef: z.string().max(128).optional().nullable(),
 });
 
@@ -20,7 +20,10 @@ export const listFilterSchema = z.object({
   cursor: z.string().optional(),
 });
 
-export const updateTransactionSchema = newTransactionSchema.partial();
+export const updateTransactionSchema = newTransactionSchema
+  .omit({ source: true, sourceRef: true })
+  .partial()
+  .strict();
 
 export const transactionIdParamSchema = z.object({
   id: z.string().min(1),

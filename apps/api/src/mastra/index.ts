@@ -20,6 +20,7 @@ export function getMastra(env: Env): Promise<Mastra> {
     // In test mode, swap LibSQL for an in-memory store so workflow runs
     // never hit the network. Production paths stay on Turso/libsql.
     const isTest = __BILLI_TEST__;
+    const useInMemoryStorage = isTest || env.BILLI_ENV === 'staging';
     const [
       { Mastra },
       libsqlMod,
@@ -29,18 +30,16 @@ export function getMastra(env: Env): Promise<Mastra> {
       { buildCaptureWorkflow },
     ] = await Promise.all([
       import('@mastra/core'),
-      isTest ? Promise.resolve({ LibSQLStore: null }) : import('@mastra/libsql'),
-      isTest ? import('@mastra/core/storage') : Promise.resolve(null),
+      useInMemoryStorage ? Promise.resolve({ LibSQLStore: null }) : import('@mastra/libsql'),
+      import('@mastra/core/storage'),
       import('./agents'),
       import('./workflows/chatbot'),
       import('./workflows/capture'),
     ]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const storage: any = isTest
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storage: any = useInMemoryStorage
       ? new (storageMod as any).InMemoryStore()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       : new (libsqlMod as any).LibSQLStore({
           id: 'billi-storage',
           url: env.TURSO_DATABASE_URL,
